@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./LoginPage.css";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -6,7 +7,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "../components/ui/card";
+import { Mail, Lock, LogIn, BookOpen, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -33,67 +36,66 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Đăng nhập</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Mật khẩu
-                </label>
-                <a
-                  href="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Quên mật khẩu?
-                </a>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Đang xử lý..." : "Đăng nhập"}
-            </Button>
-          </form>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              Chưa có tài khoản?{" "}
-              <a
-                href="/register"
-                className="text-primary hover:underline font-medium"
-              >
-                Đăng ký
-              </a>
-            </p>
+    <div className="login-bg">
+      <div className="login-card">
+        <h1 className="login-title">Đăng nhập</h1>
+        
+        <form onSubmit={handleSubmit} className="login-form">
+          <label htmlFor="email">Email</label>
+          <div className="input-wrapper">
+            <Mail className="input-icon" size={18} />
+            <input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="flex justify-between items-center">
+            <label htmlFor="password">Mật khẩu</label>
+            <a href="/forgot-password" className="login-forgot">
+              Quên mật khẩu?
+            </a>
+          </div>
+          <div className="input-wrapper">
+            <Lock className="input-icon" size={18} />
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? (
+              "Đang xử lý..."
+            ) : (
+              <>
+                Đăng nhập
+                <ArrowRight size={18} className="ml-2" />
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-5 text-center">
+          <p className="text-sm">
+            Chưa có tài khoản?{" "}
+            <a href="/register" className="login-link">
+              Đăng ký
+            </a>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
+
+  
+

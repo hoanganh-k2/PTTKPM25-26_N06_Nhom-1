@@ -1,12 +1,6 @@
 import { useState } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+import "./RegisterPage.css";
+import { User, Mail, Lock, Check, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -86,99 +80,92 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Đăng ký tài khoản</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="fullName" className="text-sm font-medium">
-                Họ và tên
-              </label>
-              <Input
-                id="fullName"
-                name="fullName"
-                type="text"
-                placeholder="Nguyễn Văn A"
-                value={formData.fullName}
-                onChange={handleChange}
-              />
-              {errors.fullName && (
-                <p className="text-red-500 text-sm">{errors.fullName}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="your@email.com"
-                value={formData.email}
-                onChange={handleChange}
-              />
-              {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Mật khẩu
-              </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-              />
-              {errors.password && (
-                <p className="text-red-500 text-sm">{errors.password}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium">
-                Xác nhận mật khẩu
-              </label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-              />
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Đang xử lý..." : "Đăng ký"}
-            </Button>
-          </form>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              Đã có tài khoản?{" "}
-              <a
-                href="/login"
-                className="text-primary hover:underline font-medium"
-              >
-                Đăng nhập
-              </a>
-            </p>
+    <div className="register-bg">
+      <div className="register-card">
+        <h1 className="register-title">Đăng ký tài khoản</h1>
+        
+        <form onSubmit={handleSubmit} className="register-form">
+          <label htmlFor="fullName">Họ và tên</label>
+          <div className="input-wrapper">
+            <User className="input-icon" size={18} />
+            <input
+              id="fullName"
+              name="fullName"
+              type="text"
+              placeholder="Nguyễn Văn A"
+              value={formData.fullName}
+              onChange={handleChange}
+            />
           </div>
-        </CardContent>
-      </Card>
+          {errors.fullName && (
+            <p className="register-error">{errors.fullName}</p>
+          )}
+
+          <label htmlFor="email">Email</label>
+          <div className="input-wrapper">
+            <Mail className="input-icon" size={18} />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="your@email.com"
+              value={formData.email}
+              onChange={handleChange}
+            />
+          </div>
+          {errors.email && <p className="register-error">{errors.email}</p>}
+
+          <label htmlFor="password">Mật khẩu</label>
+          <div className="input-wrapper">
+            <Lock className="input-icon" size={18} />
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+            />
+          </div>
+          {errors.password && <p className="register-error">{errors.password}</p>}
+
+          <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+          <div className="input-wrapper">
+            <Check className="input-icon" size={18} />
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+            />
+          </div>
+          {errors.confirmPassword && (
+            <p className="register-error">{errors.confirmPassword}</p>
+          )}
+
+          <button type="submit" className="register-btn" disabled={loading}>
+            {loading ? (
+              "Đang xử lý..."
+            ) : (
+              <>
+                Đăng ký
+                <ArrowRight size={18} className="ml-2" />
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-5 text-center">
+          <p className="text-sm">
+            Đã có tài khoản?{" "}
+            <a href="/login" className="register-link">
+              Đăng nhập
+            </a>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
