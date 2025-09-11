@@ -31,10 +31,17 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
+  // Kiểm tra vai trò người dùng
+  const isAdmin = currentUser?.isAdmin || currentUser?.role === 'admin';
+  const isWarehouseManager = currentUser?.role === 'warehouse_manager';
+
   const value = {
+    user: currentUser, // Add user alias for compatibility with Navbar
     currentUser,
     loading,
     isAuthenticated: !!currentUser,
+    isAdmin,
+    isWarehouseManager,
     login,
     register,
     logout,

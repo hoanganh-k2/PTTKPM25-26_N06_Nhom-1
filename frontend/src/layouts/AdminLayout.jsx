@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 // Icons
@@ -16,17 +16,27 @@ import {
 } from 'lucide-react';
 
 export default function AdminLayout() {
-  const { logout } = useAuth();
+  const { logout, currentUser, isAdmin, isWarehouseManager } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const navigation = [
+  // Điều hướng menu dựa theo vai trò
+  const adminNavigation = [
     { name: 'Dashboard', href: '/admin', icon: <BarChart3 className="w-5 h-5" /> },
     { name: 'Quản lý Sách', href: '/admin/books', icon: <BookOpen className="w-5 h-5" /> },
     { name: 'Quản lý Đơn hàng', href: '/admin/orders', icon: <PackageCheck className="w-5 h-5" /> },
     { name: 'Quản lý Người dùng', href: '/admin/users', icon: <Users className="w-5 h-5" /> },
     { name: 'Cài đặt', href: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
   ];
+
+  const warehouseNavigation = [
+    { name: 'Dashboard', href: '/admin', icon: <BarChart3 className="w-5 h-5" /> },
+    { name: 'Quản lý Kho', href: '/admin/inventory', icon: <BookOpen className="w-5 h-5" /> },
+    { name: 'Xác nhận Đơn hàng', href: '/admin/warehouse-orders', icon: <PackageCheck className="w-5 h-5" /> },
+  ];
+  
+  // Chọn menu phù hợp với vai trò
+  const navigation = isAdmin ? adminNavigation : warehouseNavigation;
 
   const isActive = (path) => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
@@ -41,6 +51,16 @@ export default function AdminLayout() {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+  
+  // Kiểm tra quyền truy cập
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Chỉ cho phép admin và thủ kho truy cập
+  if (!isAdmin && !isWarehouseManager) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">

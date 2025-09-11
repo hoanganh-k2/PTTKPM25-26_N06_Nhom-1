@@ -1,29 +1,36 @@
 import { useState } from "react";
-import "./HomePage.css";
+import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
 } from "../components/ui/card";
+import "./HomePage-new.css"; // Specific HomePage styles
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Mock data for featured books
-  const featuredBooks = [
-    {
-      id: 1,
-      title: "Đắc Nhân Tâm",
-      author: "Dale Carnegie",
-      price: 120000,
-      image: "https://salt.tikicdn.com/cache/750x750/ts/product/ff/7e/bf/89ccc17416ae1f9e3478e8851264f21f.jpg.webp",
-      discount: 15,
-    },
+  // Featured book - hero section
+  const featuredBook = {
+    id: 1,
+    title: "The Sons of the Empire",
+    author: "John Roberts",
+    description: "Discover the story of vitae magna ornare commodo lectus id rustic morbi leo platea commodo diam in ac urna nisi.",
+    coverImage: "https://images.unsplash.com/photo-1563941406054-953918ee8f1f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1374&q=80",
+    badge: "#1 The World's Best-selling Writer"
+  };
+
+  // Author info
+  const author = {
+    name: "John Roberts",
+    image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80",
+    bio: "Tellus tellus mattis pulvinar nulla euismod fermentum rhoncus sed vestibulum neque praesent pharetra ut fames viverra suscipit gravida dictumst volutpat ullamcorper lacus, malesuada enim proin volutpat mattis nunc amet, eget vitae egestas."
+  };
+
+  // Books data
+  const booksList = [
     {
       id: 2,
       title: "Nhà Giả Kim",
@@ -41,17 +48,49 @@ export default function HomePage() {
       discount: 20,
     },
     {
-      id: 4,
-      title: "Tôi Thấy Hoa Vàng Trên Cỏ Xanh",
-      author: "Nguyễn Nhật Ánh",
-      price: 85000,
-      image: "https://salt.tikicdn.com/cache/750x750/ts/product/2e/ae/d3/312eac4fa8264c2330c993731b3d874f.jpg.webp",
-      discount: 12,
+      id: 1,
+      title: "The Born of APLEX",
+      author: "John Roberts",
+      price: 26.00,
+      originalPrice: 26.00,
+      image: "https://images.unsplash.com/photo-1600132806370-bf17e65e942f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1374&q=80",
+      discount: 0,
+      category: "Fantasy",
+      onSale: false,
     },
-  ];
-
-  // Mock data for bestselling books
-  const bestsellingBooks = [
+    {
+      id: 2,
+      title: "The Throned Mirror",
+      author: "John Roberts",
+      price: 23.00,
+      originalPrice: 23.00,
+      image: "https://images.unsplash.com/photo-1566055990545-23e23857e816?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=774&q=80",
+      discount: 0,
+      category: "Fantasy",
+      onSale: false,
+    },
+    {
+      id: 3,
+      title: "Ark Forging",
+      author: "John Roberts",
+      price: 20.00,
+      originalPrice: 25.00,
+      image: "https://images.unsplash.com/photo-1612969308146-066015efc0eb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=870&q=80",
+      discount: 20,
+      category: "Fantasy",
+      onSale: true,
+    },
+    {
+      id: 4,
+      title: "The Sons of the Empire",
+      author: "John Roberts",
+      price: 20.00,
+      originalPrice: 26.00,
+      image: "https://images.unsplash.com/photo-1563941406054-953918ee8f1f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1374&q=80",
+      discount: 23,
+      category: "Fantasy",
+      onSale: true,
+    },
     {
       id: 5,
       title: "Không Gia Đình",
@@ -78,193 +117,122 @@ export default function HomePage() {
     },
     {
       id: 8,
-      title: "Số Đỏ",
-      author: "Vũ Trọng Phụng",
-      price: 95000,
-      image: "https://salt.tikicdn.com/cache/750x750/ts/product/99/20/e0/db1f931956bbafc394135aab700346f2.jpg.webp",
-      discount: 15,
+      title: "The Sons of the Empire",
+      author: "John Roberts",
+      price: 20.00,
+      originalPrice: 26.00,
+      image: "https://images.unsplash.com/photo-1563941406054-953918ee8f1f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1374&q=80",
+      discount: 23,
+      category: "Fantasy",
+      onSale: true,
     },
   ];
 
   return (
     <>
-      <div className="home-hero">
-        <h1>Khám Phá Thế Giới Sách</h1>
-        <p>Hàng ngàn đầu sách hay với giá tốt nhất, giao hàng nhanh chóng</p>
-        <a href="#new-books" className="home-cta">Khám phá ngay</a>
-      </div>
-      <div className="home-section">
-        <div className="home-books">
-          {['Văn Học', 'Kinh Tế', 'Thiếu Nhi', 'Ngoại Ngữ'].map((category, index) => (
-            <div 
-              key={index} 
-              className="bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg p-6 text-white text-center cursor-pointer hover:shadow-lg transition-all"
-            >
-              <h3 className="font-bold text-lg mb-2">{category}</h3>
-              <p className="text-blue-100 text-sm">Xem tất cả</p>
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <div className="new-release">NEW RELEASE</div>
+          <h1>The Sons of the Empire</h1>
+          <p>
+            Justo habitant at augue ac sed proin consectetur ac urna nisl elit
+            nulla facilisis viverra dolor sagittis nisi risus egestas adipiscing
+            nibh euismod.
+          </p>
+          <div className="hero-buttons">
+            <Button className="buy-now-btn">Buy Now</Button>
+            <Button variant="outline" className="read-sample-btn">Read Sample</Button>
+          </div>
+        </div>
+        <div className="hero-image">
+          <div className="book-cover">
+            <div className="author-name">JOHN ROBERTS</div>
+            <div className="book-title">
+              <div>The Sons</div>
+              <div className="book-title-of">of</div>
+              <div>The Empire</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* New Releases Section */}
-      <section className="home-section">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold">
-            <span className="inline-block border-b-4 border-blue-500 pb-1">Sách Mới Nhất</span>
-          </h2>
-          <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
-            Xem thêm
-          </Button>
-        </div>
-        <div className="home-books">
-          {featuredBooks.map((book) => (
-            <Card key={book.id} className="home-book-card group">
-              <div className="aspect-[2/3] relative overflow-hidden bg-gray-100">
-                <img
-                  src={book.image}
-                  alt={book.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-                {book.discount > 0 && (
-                  <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
-                    -{book.discount}%
-                  </span>
-                )}
-              </div>
-              <CardContent className="pt-4">
-                <h3 className="home-book-title group-hover:text-blue-600 transition-colors">
-                  {book.title}
-                </h3>
-                <p className="home-book-author">{book.author}</p>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <p className="home-book-price">
-                    {new Intl.NumberFormat("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    }).format(book.price * (1 - book.discount/100))}
-                  </p>
-                  {book.discount > 0 && (
-                    <p className="text-gray-400 text-sm line-through">
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(book.price)}
-                    </p>
-                  )}
-                </div>
-                <div className="mt-1 flex items-center text-sm">
-                  <div className="flex text-yellow-400">
-                    {'★★★★☆'}
-                  </div>
-                  <span className="ml-1 text-gray-500">(120)</span>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Thêm vào giỏ hàng
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+            <div className="book-description">
+              Discover the story of vitae magna ornare commodo lectus id rustic morbi
+              leo platea commodo diam in ac urna nisi
+            </div>
+            <div className="book-badge">#1 The World's Best-selling Writer</div>
+          </div>
         </div>
       </section>
 
-      {/* Bestsellers Section */}
-      <section className="home-section">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold">
-            <span className="inline-block border-b-4 border-blue-500 pb-1">Sách Bán Chạy</span>
-          </h2>
-          <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
-            Xem thêm
-          </Button>
+      {/* Author Biography */}
+      <section className="author-section">
+        <div className="author-image">
+          <img src={author.image} alt={author.name} />
         </div>
-        <div className="home-books">
-          {bestsellingBooks.map((book) => (
-            <Card key={book.id} className="home-book-card group">
-              <div className="aspect-[2/3] relative overflow-hidden bg-gray-100">
-                <img
-                  src={book.image}
-                  alt={book.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                />
-                {book.discount > 0 && (
-                  <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
-                    -{book.discount}%
-                  </span>
-                )}
-                <span className="absolute top-2 left-2 bg-amber-500 text-white px-2 py-1 rounded text-xs font-bold">
-                  Bán chạy
-                </span>
-              </div>
-              <CardContent className="pt-4">
-                <h3 className="home-book-title group-hover:text-blue-600 transition-colors">
-                  {book.title}
-                </h3>
-                <p className="home-book-author">{book.author}</p>
-                <div className="mt-2 flex items-baseline gap-2">
-                  <p className="home-book-price">
-                    {new Intl.NumberFormat("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    }).format(book.price * (1 - book.discount/100))}
-                  </p>
-                  {book.discount > 0 && (
-                    <p className="text-gray-400 text-sm line-through">
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(book.price)}
-                    </p>
-                  )}
-                </div>
-                <div className="mt-1 flex items-center text-sm">
-                  <div className="flex text-yellow-400">
-                    {'★★★★★'}
-                  </div>
-                  <span className="ml-1 text-gray-500">(215)</span>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Thêm vào giỏ hàng
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+        <div className="author-content">
+          <div className="biography-label">BIOGRAPHY</div>
+          <h2>John Roberts</h2>
+          <p>{author.bio}</p>
+          <p>
+            Vulputate vulputate eget cursus nam ultricies mauris, malesuada
+            elementum lacus arcu, sit dolor ipsum, ac felis, egestas vel tortor
+            eget aenean nam.
+          </p>
+          <Button variant="outline" className="read-more-btn">Read More</Button>
         </div>
       </section>
 
-      {/* Promo Section */}
-      <section className="home-section">
-        <div className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 p-8 md:p-12 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-              <defs>
-                <pattern id="books-pattern" patternUnits="userSpaceOnUse" width="100" height="100">
-                  <path d="M20,10 L80,10 L80,90 L20,90 Z" stroke="white" fill="none"/>
-                  <path d="M30,20 L70,20 L70,80 L30,80 Z" stroke="white" fill="none"/>
-                  <path d="M40,30 L60,30 L60,70 L40,70 Z" stroke="white" fill="none"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#books-pattern)" />
-            </svg>
-          </div>
-          <div className="md:w-3/4 lg:w-2/3 relative z-10">
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">Đăng ký nhận thông tin</h3>
-            <p className="text-blue-100 mb-6">Đăng ký để nhận thông tin về sách mới và ưu đãi đặc biệt mỗi tuần.</p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                type="email"
-                placeholder="Nhập email của bạn"
-                className="bg-white border-0"
-              />
-              <Button className="bg-white text-blue-600 hover:bg-blue-50">
-                Đăng ký
-              </Button>
+      {/* Best Selling Books */}
+      <section className="bestselling-section">
+        <h2>Best Selling Books</h2>
+        <p className="section-description">
+          Vulputate vulputate eget cursus nam ultricies mauris, malesuada elementum lacus 
+          arcu, sit dolor ipsum, ac felis, egestas vel tortor eget aenean.
+        </p>
+        
+        <div className="books-grid">
+          {booksList.map(book => (
+            <div key={book.id} className="book-item">
+              <Link to={`/books/${book.id}`} className="book-link">
+                <div className="book-cover-container">
+                  {book.onSale && <div className="sale-badge">Sale!</div>}
+                  <img src={book.image} alt={book.title} className="book-cover-image" />
+                  <div className="book-author">{book.author}</div>
+                </div>
+                <div className="book-details">
+                  <div className="book-category">{book.category}</div>
+                  <h3 className="book-title">{book.title}</h3>
+                  <div className="book-price">
+                    {book.discount > 0 ? (
+                      <>
+                        <span className="original-price">
+                          ${(book.originalPrice || (book.price * 100 / (100 - book.discount))).toFixed(2)}
+                        </span>
+                        <span className="sale-price">${typeof book.price === 'number' ? book.price.toFixed(2) : book.price}</span>
+                      </>
+                    ) : (
+                      <span className="regular-price">${typeof book.price === 'number' ? book.price.toFixed(2) : book.price}</span>
+                    )}
+                  </div>
+                </div>
+              </Link>
             </div>
-          </div>
+          ))}
+        </div>
+
+        <div className="see-all-books">
+          <Button variant="outline" className="shop-all-btn">Shop All Books</Button>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="newsletter-section">
+        <h2>Be the first to know</h2>
+        <p>
+          Lectus amet scelerisque fusce est venenatis, eget enim dolor
+          amet vitae pharetra
+        </p>
+        <div className="newsletter-form">
+          <Input type="email" placeholder="Your email address" className="newsletter-input" />
+          <Button className="subscribe-btn">Subscribe</Button>
         </div>
       </section>
     </>
