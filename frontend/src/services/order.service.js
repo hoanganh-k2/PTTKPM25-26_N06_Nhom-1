@@ -82,10 +82,24 @@ const orderService = {
     }
   },
 
-  // Lấy danh sách đơn hàng của người dùng
-  getUserOrders: async () => {
+  // Lấy tất cả đơn hàng (dành cho Admin)
+  getAllOrders: async (params = {}) => {
     try {
-      const response = await api.get("/orders");
+      const response = await api.get("/orders/admin", { params });
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi lấy tất cả đơn hàng",
+        }
+      );
+    }
+  },
+  
+  // Lấy danh sách đơn hàng của người dùng hiện tại
+  getUserOrders: async (params = {}) => {
+    try {
+      const response = await api.get("/orders", { params });
       return response.data;
     } catch (error) {
       throw (
@@ -111,13 +125,41 @@ const orderService = {
   },
 
   // Hủy đơn hàng
-  cancelOrder: async (orderId) => {
+  cancelOrder: async (orderId, reason = '') => {
     try {
-      const response = await api.put(`/orders/${orderId}/cancel`);
+      const response = await api.put(`/orders/${orderId}/cancel`, { reason });
       return response.data;
     } catch (error) {
       throw (
         error.response?.data || { message: "Có lỗi xảy ra khi hủy đơn hàng" }
+      );
+    }
+  },
+  
+  // Cập nhật trạng thái đơn hàng (Admin)
+  updateOrderStatus: async (orderId, status) => {
+    try {
+      const response = await api.patch(`/orders/${orderId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi cập nhật trạng thái đơn hàng",
+        }
+      );
+    }
+  },
+  
+  // Lấy thống kê đơn hàng (Admin)
+  getOrderStatistics: async (period = 'month') => {
+    try {
+      const response = await api.get('/orders/statistics', { params: { period } });
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi lấy thống kê đơn hàng",
+        }
       );
     }
   },

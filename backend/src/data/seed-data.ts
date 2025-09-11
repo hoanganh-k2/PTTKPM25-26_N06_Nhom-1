@@ -177,11 +177,19 @@ export const seedData = async (supabase) => {
 
     // Replace IDs in books seed data
     const booksWithRealIds = booksSeed.map(book => {
-      const authorId = authors.find(a => a.name === authorsSeed.find((_, i) => i + 1 === parseInt(book.author_id)).name)?.id;
-      const publisherId = publishers.find(p => p.name === publishersSeed.find((_, i) => i + 1 === parseInt(book.publisher_id)).name)?.id;
-      const categoryIds = book.category_ids.map(catId => 
-        categories.find(c => c.name === categoriesSeed.find((_, i) => i + 1 === parseInt(catId)).name)?.id
-      );
+      const authorIndex = parseInt(book.author_id) - 1;
+      const authorName = authorsSeed[authorIndex]?.name;
+      const authorId = authors.find(a => a.name === authorName)?.id || null;
+      
+      const publisherIndex = parseInt(book.publisher_id) - 1;
+      const publisherName = publishersSeed[publisherIndex]?.name;
+      const publisherId = publishers.find(p => p.name === publisherName)?.id || null;
+      
+      const categoryIds = book.category_ids.map(catId => {
+        const categoryIndex = parseInt(catId) - 1;
+        const categoryName = categoriesSeed[categoryIndex]?.name;
+        return categories.find(c => c.name === categoryName)?.id || null;
+      }).filter(id => id !== null);
 
       return {
         ...book,

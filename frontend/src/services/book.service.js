@@ -29,6 +29,48 @@ const bookService = {
       );
     }
   },
+  
+  // Tạo sách mới (Admin)
+  createBook: async (bookData) => {
+    try {
+      const response = await api.post("/books", bookData);
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi tạo sách mới",
+        }
+      );
+    }
+  },
+
+  // Cập nhật sách (Admin)
+  updateBook: async (id, bookData) => {
+    try {
+      const response = await api.put(`/books/${id}`, bookData);
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi cập nhật thông tin sách",
+        }
+      );
+    }
+  },
+
+  // Xóa sách (Admin)
+  deleteBook: async (id) => {
+    try {
+      const response = await api.delete(`/books/${id}`);
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi xóa sách",
+        }
+      );
+    }
+  },
 
   // Lấy sách theo thể loại
   getBooksByCategory: async (categoryId, params = {}) => {
