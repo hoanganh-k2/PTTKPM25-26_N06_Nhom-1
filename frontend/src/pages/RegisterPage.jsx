@@ -1,8 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./RegisterPage.css";
+import { Link } from "react-router-dom";
 import { User, Mail, Lock, Check, ArrowRight } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -11,6 +16,7 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,17 +69,25 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    setApiError("");
 
     try {
-      // TODO: Implement actual registration with API
-      console.log("Register with:", formData);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Redirect to login on successful registration
-      // navigate('/login');
+      // Extract only the required fields
+      const { fullName, email, password } = formData;
+      await register({ fullName, email, password });
+      
+      // Show success message and redirect to login
+      navigate("/login", { 
+        state: { message: "Đăng ký thành công! Vui lòng đăng nhập." } 
+      });
     } catch (error) {
       console.error("Registration failed:", error);
+      // More detailed error message handling
+      if (error.response?.data?.message) {
+        setApiError(error.response.data.message);
+      } else {
+        setApiError(error.message || "Đăng ký thất bại. Vui lòng thử lại sau.");
+      }
     } finally {
       setLoading(false);
     }
@@ -145,6 +159,10 @@ export default function RegisterPage() {
             <p className="register-error">{errors.confirmPassword}</p>
           )}
 
+          {apiError && (
+            <p className="register-error api-error">{apiError}</p>
+          )}
+
           <button type="submit" className="register-btn" disabled={loading}>
             {loading ? (
               "Đang xử lý..."
@@ -160,9 +178,9 @@ export default function RegisterPage() {
         <div className="mt-5 text-center">
           <p className="text-sm">
             Đã có tài khoản?{" "}
-            <a href="/login" className="register-link">
+            <Link to="/login" className="register-link">
               Đăng nhập
-            </a>
+            </Link>
           </p>
         </div>
       </div>

@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
+    // Let auth.service handle the filtering of properties
     return await authService.register(userData);
   };
 

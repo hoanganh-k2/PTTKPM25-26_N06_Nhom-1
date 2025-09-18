@@ -5,10 +5,26 @@ const authService = {
   // Đăng ký tài khoản
   register: async (userData) => {
     try {
-      const response = await api.post("/auth/register", userData);
+      // Create a clean object with ONLY the required fields - nothing else
+      const registerPayload = {
+        fullName: userData.fullName,
+        email: userData.email,
+        password: userData.password,
+        role: 'customer'
+      };
+      
+      console.log('Auth service sending registration data:', JSON.stringify(registerPayload));
+      const response = await api.post("/auth/register", registerPayload);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Có lỗi xảy ra khi đăng ký" };
+      console.error("Registration API error:", error);
+      
+      // Improved error handling
+      if (error.response && error.response.data) {
+        throw error.response.data;
+      } else {
+        throw { message: "Có lỗi xảy ra khi đăng ký" };
+      }
     }
   },
 
@@ -23,7 +39,9 @@ const authService = {
       }
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: "Có lỗi xảy ra khi đăng nhập" };
+      console.error("Login API error:", error);
+      // Return the original error to enable better error handling in the component
+      throw error;
     }
   },
 

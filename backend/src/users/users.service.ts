@@ -143,8 +143,8 @@ export class UsersService {
             full_name: createUserDto.fullName,
             email: createUserDto.email,
             password: hashedPassword,
-            phone: createUserDto.phone,
-            address: createUserDto.address,
+            // Remove phone and address properties from initial user creation
+            // They can be added later when updating the user profile
             is_admin: createUserDto.role === UserRole.ADMIN,
             role: createUserDto.role || UserRole.CUSTOMER,
           },

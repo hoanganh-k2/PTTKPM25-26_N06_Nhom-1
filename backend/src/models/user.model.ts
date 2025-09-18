@@ -49,9 +49,10 @@ export class CreateUserDto {
 
   @IsEnum(UserRole)
   role?: UserRole;
-
-  phone?: string;
-  address?: string;
+  
+  // Note: phone and address are intentionally excluded from CreateUserDto
+  // to avoid validation issues during registration
+  // These properties can be added later through profile updates
 }
 
 export class LoginDto {
