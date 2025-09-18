@@ -47,6 +47,7 @@ export class AuthService {
           email: createUserDto.email,
           password: hashedPassword,
           is_admin: false,
+          role: 'customer', // Mặc định là khách hàng
         },
       ])
       .select()
@@ -62,7 +63,11 @@ export class AuthService {
       fullName: data.full_name,
       email: data.email,
       isAdmin: data.is_admin,
+      role: data.role || 'customer', // Thêm role
       createdAt: new Date(data.created_at),
+      updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
+      phone: data.phone,
+      address: data.address,
     };
   }
 
@@ -91,7 +96,12 @@ export class AuthService {
     }
 
     // Tạo JWT token
-    const payload = { sub: user.id, email: user.email, isAdmin: user.is_admin };
+    const payload = { 
+      sub: user.id, 
+      email: user.email, 
+      isAdmin: user.is_admin,
+      role: user.role || 'customer'
+    };
     const token = this.jwtService.sign(payload);
 
     return {
@@ -101,7 +111,11 @@ export class AuthService {
         fullName: user.full_name,
         email: user.email,
         isAdmin: user.is_admin,
+        role: user.role || 'customer', // Thêm role
         createdAt: new Date(user.created_at),
+        updatedAt: user.updated_at ? new Date(user.updated_at) : undefined,
+        phone: user.phone,
+        address: user.address,
       },
     };
   }
@@ -127,7 +141,11 @@ export class AuthService {
         fullName: user.full_name,
         email: user.email,
         isAdmin: user.is_admin,
+        role: user.role || 'customer', // Thêm role
         createdAt: new Date(user.created_at),
+        updatedAt: user.updated_at ? new Date(user.updated_at) : undefined,
+        phone: user.phone,
+        address: user.address,
       };
     } catch (error) {
       throw new UnauthorizedException('Token không hợp lệ');

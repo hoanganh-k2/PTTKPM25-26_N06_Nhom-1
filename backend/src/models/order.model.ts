@@ -82,3 +82,39 @@ export class UpdateOrderStatusDto {
   @IsNotEmpty()
   status: OrderStatus;
 }
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  PAID = 'paid',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
+}
+
+export class UpdateOrderDto {
+  @IsEnum(OrderStatus)
+  status?: OrderStatus;
+  
+  @IsEnum(PaymentStatus)
+  paymentStatus?: PaymentStatus;
+}
+
+export interface OrderItemResponse {
+  bookId: string;
+  bookTitle: string;
+  quantity: number;
+  price: number;
+}
+
+export class OrderResponseDto implements Omit<Order, 'items'> {
+  id: string;
+  userId: string;
+  status: OrderStatus;
+  totalAmount: number;
+  items: OrderItemResponse[];
+  shippingAddress: Address;
+  billingAddress?: Address;
+  paymentMethod: string;
+  paymentStatus: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

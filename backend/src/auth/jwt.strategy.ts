@@ -39,7 +39,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       fullName: user.full_name,
       email: user.email,
       isAdmin: user.is_admin,
+      role: user.role || 'customer', // Thêm role
       createdAt: new Date(user.created_at),
+      updatedAt: user.updated_at ? new Date(user.updated_at) : undefined,
+      phone: user.phone,
+      address: user.address,
     };
   }
 }

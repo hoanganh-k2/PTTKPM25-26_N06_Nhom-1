@@ -29,25 +29,29 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, selectedRole]);
+  }, [currentPage, selectedRole, searchQuery]);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Giả lập dữ liệu
-      setTimeout(() => {
-        const mockUsers = [
-          { id: '1', name: 'Nguyễn Văn Admin', email: 'admin@example.com', phone: '0912345678', role: 'admin', registeredDate: '2023-01-15', status: 'active' },
-          { id: '2', name: 'Trần Thị B', email: 'tranthib@example.com', phone: '0923456789', role: 'customer', registeredDate: '2023-05-20', status: 'active' },
-          { id: '3', name: 'Lê Văn C', email: 'levanc@example.com', phone: '0934567890', role: 'customer', registeredDate: '2023-06-10', status: 'active' },
-          { id: '4', name: 'Phạm Thị D', email: 'phamthid@example.com', phone: '0945678901', role: 'customer', registeredDate: '2023-07-25', status: 'inactive' },
-          { id: '5', name: 'Hoàng Văn E', email: 'hoangvane@example.com', phone: '0956789012', role: 'customer', registeredDate: '2023-08-05', status: 'active' }
-        ];
+      // Gọi API thực từ service
+      import('../../services/user.service').then(async (module) => {
+        const { userService } = module;
+        const result = await userService.getAllUsers({
+          page: currentPage,
+          limit: 10,
+          role: selectedRole,
+          search: searchQuery
+        });
         
-        setUsers(mockUsers);
-        setTotalPages(2); // Giả lập có 2 trang
+        // Xử lý dữ liệu trả về từ API
+        setUsers(result.users || []);
+        setTotalPages(result.totalPages || 1);
         setLoading(false);
-      }, 500);
+      }).catch(error => {
+        console.error('Lỗi khi import user service:', error);
+        setLoading(false);
+      });
     } catch (error) {
       console.error('Lỗi khi lấy danh sách người dùng:', error);
       setLoading(false);
