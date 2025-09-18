@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../contexts/CartContext';
+import './navbar-cart.css';
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { totalItems } = useCart();
 
   const isActive = (path) => {
     return location.pathname === path ? 'active-nav-link' : '';
@@ -33,6 +36,10 @@ export default function Navbar() {
             </Link>
             <Link to="/contact" className={`nav-link ${isActive('/contact')}`}>
               Contact
+            </Link>
+            <Link to="/cart" className={`nav-link cart-link ${isActive('/cart')}`}>
+              Giỏ hàng
+              {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
             </Link>
           </div>
 
@@ -110,6 +117,13 @@ export default function Navbar() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               About
+            </Link>
+            <Link 
+              to="/cart" 
+              className={`mobile-nav-link ${isActive('/cart')}`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Giỏ hàng {totalItems > 0 && `(${totalItems})`}
             </Link>
             <Link 
               to="/contact" 

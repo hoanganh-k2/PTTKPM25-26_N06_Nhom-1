@@ -1,8 +1,12 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { CartProvider } from "./contexts/CartContext";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import BookDetailPage from "./pages/BookDetailPage";
+import BooksPage from "./pages/BooksPage";
+import CartPage from "./pages/CartPage";
 import AdminLayout from "./layouts/AdminLayout";
 import MainLayout from "./components/layout/MainLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -18,8 +22,9 @@ import "./components/layout/layout.css";
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
+      <CartProvider>
+        <Router>
+          <Routes>
           {/* Public Routes with Main Layout */}
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
@@ -28,7 +33,9 @@ function App() {
             {/* Add routes for About and Contact pages when they're created */}
             <Route path="/about" element={<div className="container mx-auto py-10 px-4"><h1>About Us</h1></div>} />
             <Route path="/contact" element={<div className="container mx-auto py-10 px-4"><h1>Contact Us</h1></div>} />
-            <Route path="/books" element={<div className="container mx-auto py-10 px-4"><h1>All Books</h1></div>} />
+            <Route path="/books" element={<BooksPage />} />
+            <Route path="/books/:id" element={<BookDetailPage />} />
+            <Route path="/cart" element={<CartPage />} />
           </Route>
           
           {/* Admin Routes */}
@@ -44,7 +51,8 @@ function App() {
             <Route path="warehouse-orders" element={<OrdersWarehousePage />} />
           </Route>
         </Routes>
-      </Router>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   );
 }

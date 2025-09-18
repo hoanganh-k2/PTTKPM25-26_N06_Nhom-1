@@ -1,0 +1,285 @@
+.book-detail-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.breadcrumb {
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.breadcrumb a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.book-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+  .book-detail-content {
+    flex-direction: row;
+  }
+}
+
+.book-image-container {
+  flex: 0 0 300px;
+  display: flex;
+  justify-content: center;
+}
+
+.book-cover-image {
+  max-width: 100%;
+  max-height: 450px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.book-info {
+  flex: 1;
+}
+
+.book-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+}
+
+.book-meta {
+  margin-bottom: 1.5rem;
+}
+
+.meta-item {
+  margin-bottom: 0.5rem;
+}
+
+.meta-label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  color: #4b5563;
+}
+
+.meta-value {
+  color: #1f2937;
+}
+
+.categories {
+  margin-bottom: 2rem;
+}
+
+.category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.category-tag {
+  background-color: #e5e7eb;
+  color: #4b5563;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+
+.book-price {
+  margin-bottom: 2rem;
+}
+
+.price-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #f43f5e;
+  margin-right: 1rem;
+}
+
+.stock-status {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.add-to-cart {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+  .add-to-cart {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  max-width: 150px;
+}
+
+.quantity-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e5e7eb;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.quantity-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-input {
+  width: 50px;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.add-to-cart-btn {
+  height: 48px;
+  padding: 0 2rem;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.add-to-cart-btn.added {
+  background-color: #047857; /* Green color for added state */
+}
+
+.add-to-cart-btn.added:hover {
+  background-color: #065f46;
+}
+
+.view-cart-link {
+  display: inline-block;
+  margin-left: 1rem;
+  color: #2563eb;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.view-cart-link:hover {
+  text-decoration: underline;
+}
+
+.book-details-tabs {
+  margin-bottom: 3rem;
+}
+
+.tab-content {
+  padding: 1.5rem 0;
+}
+
+.tab-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+}
+
+.book-description {
+  line-height: 1.7;
+  color: #4b5563;
+  white-space: pre-line;
+}
+
+.author-info-section,
+.publisher-info-section {
+  margin-bottom: 3rem;
+}
+
+.author-info-section h2,
+.publisher-info-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.75rem;
+}
+
+.author-info h3,
+.publisher-info h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+}
+
+.author-nationality {
+  font-style: italic;
+  margin-bottom: 0.75rem;
+  color: #4b5563;
+}
+
+.author-biography,
+.publisher-info p {
+  line-height: 1.7;
+  color: #4b5563;
+}
+
+.publisher-website {
+  display: inline-block;
+  margin-top: 1rem;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.publisher-website:hover {
+  text-decoration: underline;
+}
+
+.loading-spinner,
+.error-message,
+.not-found {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.error-message h2,
+.not-found h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #f43f5e;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 1rem;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
