@@ -2,6 +2,7 @@
 .register-bg {
   min-height: 100vh;
   background: linear-gradient(135deg, #0f2b5d 0%, #1e40af 100%);
+  padding: 20px 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,7 +48,7 @@
 .register-title::after {
   content: '';
   position: absolute;
-  bottom: -0.5rem;
+  bottom: -1rem;
   left: 25%;
   width: 50%;
   height: 3px;

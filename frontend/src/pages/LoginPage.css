@@ -47,7 +47,7 @@
 .login-title::after {
   content: '';
   position: absolute;
-  bottom: -0.5rem;
+  bottom: -1rem;
   left: 25%;
   width: 50%;
   height: 3px;
@@ -67,6 +67,7 @@
 
 .input-wrapper {
   position: relative;
+  display:flex;
   margin-bottom: 1.5rem;
 }
 
@@ -79,7 +80,7 @@
 }
 
 .login-form input {
-  width: 100%;
+  width: 80%;
   padding: 0.85rem 1.25rem 0.85rem 2.75rem;
   border-radius: 0.75rem;
   border: 1px solid #e2e8f0;

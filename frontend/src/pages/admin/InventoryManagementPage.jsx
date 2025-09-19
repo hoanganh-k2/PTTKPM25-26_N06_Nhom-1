@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Search, AlertCircle, RefreshCw } from 'lucide-react';
+import { Package, Search, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import inventoryService from '../../services/inventory.service';
+import './AdminPages.css';
 
 export default function InventoryManagementPage() {
   const navigate = useNavigate();
@@ -54,90 +55,109 @@ export default function InventoryManagementPage() {
     : inventory;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Quản Lý Kho Hàng</h1>
-      
-      <div className="mb-6 flex flex-wrap gap-4 justify-between items-center">
-        <div className="flex gap-2 items-center">
-          <Input 
-            placeholder="Tìm kiếm theo tên sách..." 
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="max-w-xs"
-          />
-          <Button variant="outline" className="flex gap-2 items-center">
-            <Search size={16} />
-            Tìm kiếm
-          </Button>
-        </div>
-        
-        <div className="flex gap-2 items-center">
-          <span className="text-sm text-gray-600">Hiển thị sản phẩm có tồn kho dưới:</span>
-          <Input 
-            type="number" 
-            min="0" 
-            value={lowStockFilter}
-            onChange={e => setLowStockFilter(e.target.value)}
-            className="w-20"
-          />
-          <Button onClick={fetchInventory} variant="outline" className="flex gap-1 items-center">
-            <RefreshCw size={16} />
-            Cập nhật
-          </Button>
+    <div className="admin-container fade-in">
+      <div className="admin-header">
+        <div className="admin-title">
+          <span className="admin-title-icon"><Package size={20} /></span>
+          <div>
+            <h2>Quản lý Kho Hàng</h2>
+          </div>
         </div>
       </div>
+      
+      <div className="admin-card slide-up">
+        <div className="admin-card-content">
+          <div className="admin-controls">
+            <div className="admin-search">
+              <Search className="admin-search-icon" />
+              <input 
+                type="search" 
+                placeholder="Tìm kiếm theo tên sách..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="admin-form-input"
+              />
+            </div>
+            
+            <div className="admin-filters">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Tồn kho dưới:</span>
+                <input 
+                  type="number" 
+                  min="0" 
+                  value={lowStockFilter}
+                  onChange={e => setLowStockFilter(e.target.value)}
+                  className="admin-form-input"
+                  style={{width: '80px'}}
+                />
+              </div>
+              <button 
+                onClick={fetchInventory} 
+                className="admin-filter-btn active"
+              >
+                <RefreshCw size={16} />
+                Cập nhật
+              </button>
+            </div>
+          </div>
 
       {loading ? (
-        <div className="text-center py-8">Đang tải dữ liệu...</div>
+        <div className="admin-loading">
+          <div className="admin-loading-spinner">
+            <RefreshCw className="h-8 w-8" />
+          </div>
+          <span>Đang tải dữ liệu...</span>
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredInventory.map(book => (
-              <Card key={book.id} className={book.stock < 5 ? "border-red-300" : ""}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex justify-between items-start">
+              <div key={book.id} className={`admin-card ${book.stock < 5 ? "border-red-300" : ""}`}>
+                <div className="admin-card-header">
+                  <div className="admin-card-title">
                     <span>{book.title}</span>
                     {book.stock < 5 && (
                       <AlertCircle size={18} className="text-red-500" />
                     )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+                  </div>
+                </div>
+                <div className="admin-card-content">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-gray-600">ID: {book.id.substring(0, 8)}...</span>
+                    <span className="text-text-tertiary text-sm">ID: {book.id.substring(0, 8)}...</span>
                     <span 
-                      className={`font-semibold ${
+                      className={
                         book.stock < 5 
-                          ? 'text-red-600' 
+                          ? 'stock-level stock-low' 
                           : book.stock < 10 
-                            ? 'text-amber-600' 
-                            : 'text-green-600'
-                      }`}
+                            ? 'stock-level stock-medium' 
+                            : 'stock-level stock-good'
+                      }
                     >
                       Tồn kho: {book.stock}
                     </span>
                   </div>
 
                   <div className="flex gap-2">
-                    <Input 
+                    <input 
                       type="number" 
                       min="0" 
                       defaultValue={book.stock}
                       id={`stock-${book.id}`}
-                      className="w-24"
+                      className="admin-form-input"
+                      style={{width: '80px'}}
                     />
-                    <Button 
+                    <button 
                       onClick={() => {
                         const newStock = parseInt(document.getElementById(`stock-${book.id}`).value);
                         handleUpdateStock(book.id, newStock);
                       }}
-                      variant="outline"
+                      className="admin-filter-btn"
                     >
                       Cập nhật
-                    </Button>
+                    </button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
 
@@ -147,29 +167,34 @@ export default function InventoryManagementPage() {
             </div>
           )}
 
-          <div className="flex justify-center mt-6">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
+          <div className="admin-pagination">
+            <div className="pagination-info">
+              Trang {currentPage} / {totalPages}
+            </div>
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
                 onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
               >
-                Trước
-              </Button>
-              <span className="py-2 px-4 border rounded">
-                {currentPage} / {totalPages}
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="pagination-btn active">
+                {currentPage}
               </span>
-              <Button
-                variant="outline"
+              <button
+                className="pagination-btn"
                 onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
                 disabled={currentPage === totalPages}
               >
-                Sau
-              </Button>
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </>
       )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Filter, BookOpen, RefreshCw, AlertCircle } from 'lucide-react';
 import bookService from '../../services/book.service';
+import './AdminPages.css';
 
 export default function BooksManagementPage() {
   const navigate = useNavigate();
@@ -133,120 +131,133 @@ export default function BooksManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Quản lý Sách</h2>
-          <p className="text-gray-500">Quản lý kho sách của hiệu sách</p>
+    <div className="admin-container fade-in">
+      <div className="admin-header">
+        <div className="admin-title">
+          <span className="admin-title-icon"><BookOpen size={20} /></span>
+          <div>
+            <h2>Quản lý Sách</h2>
+            {/* <p className="text-sm text-text-secondary">Quản lý kho sách của hiệu sách</p> */}
+          </div>
         </div>
-        <Button onClick={() => navigate('/admin/books/add')}>
-          <Plus className="mr-2 h-4 w-4" /> Thêm sách mới
-        </Button>
+        <button className="admin-btn admin-btn-primary" onClick={() => navigate('/admin/books/add')}>
+          <Plus className="h-4 w-4 mr-1" /> Thêm sách mới
+        </button>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-            <form onSubmit={handleSearch} className="flex w-full md:w-1/2 gap-2">
-              <Input
-                type="search"
-                placeholder="Tìm theo tên sách, tác giả..."
+      <div className="admin-card slide-up">
+        <div className="admin-card-content">
+          <div className="admin-controls">
+            <div className="admin-search">
+              <Search className="admin-search-icon" />
+              <input 
+                type="search" 
+                placeholder="Tìm theo tên sách, tác giả..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
+                className="admin-form-input"
               />
-              <Button type="submit">
-                <Search className="h-4 w-4" />
-              </Button>
-            </form>
+            </div>
             
-            <div className="flex gap-2">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <select
-                  value={selectedCategory}
-                  onChange={handleCategoryChange}
-                  className="border rounded-md px-3 py-1 bg-white"
-                >
-                  <option value="">Tất cả thể loại</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="admin-filters">
+              <select
+                value={selectedCategory}
+                onChange={handleCategoryChange}
+                className="admin-form-select"
+              >
+                <option value="">Tất cả thể loại</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <button className="admin-filter-btn" onClick={handleSearch}>
+                <Filter className="h-4 w-4 mr-1" /> Lọc
+              </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="admin-table-container">
+            <table className="admin-table">
               <thead>
-                <tr className="border-b">
-                  <th className="pb-2 text-left font-medium">Tên sách</th>
-                  <th className="pb-2 text-left font-medium">Tác giả</th>
-                  <th className="pb-2 text-left font-medium">Thể loại</th>
-                  <th className="pb-2 text-right font-medium">Giá bán</th>
-                  <th className="pb-2 text-right font-medium">Tồn kho</th>
-                  <th className="pb-2 text-left font-medium">Năm XB</th>
-                  <th className="pb-2 text-center font-medium">Thao tác</th>
+                <tr>
+                  <th>Tên sách</th>
+                  <th>Tác giả</th>
+                  <th>Thể loại</th>
+                  <th style={{textAlign: 'right'}}>Giá bán</th>
+                  <th style={{textAlign: 'right'}}>Tồn kho</th>
+                  <th>Năm XB</th>
+                  <th className="text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="py-4 text-center">
-                      Đang tải dữ liệu...
+                    <td colSpan="7">
+                      <div className="admin-loading">
+                        <div className="admin-loading-spinner">
+                          <RefreshCw className="h-8 w-8" />
+                        </div>
+                        <span>Đang tải dữ liệu...</span>
+                      </div>
                     </td>
                   </tr>
                 ) : books.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="py-4 text-center">
-                      Không có sách nào được tìm thấy.
+                    <td colSpan="7">
+                      <div className="admin-empty-state">
+                        <BookOpen size={24} />
+                        <span>Không có sách nào được tìm thấy</span>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   books.map((book) => (
-                    <tr key={book.id} className="border-b hover:bg-gray-50">
-                      <td className="py-4">
+                    <tr key={book.id}>
+                      <td>
                         <div className="font-medium">{book.title}</div>
                       </td>
-                      <td className="py-4">{book.author.name}</td>
-                      <td className="py-4">
+                      <td>{book.author.name}</td>
+                      <td>
                         <div className="flex flex-wrap gap-1">
                           {book.categories.map((category) => (
                             <span 
                               key={category.id}
-                              className="px-2 py-1 bg-gray-100 text-xs rounded-full"
+                              className="admin-badge admin-badge-blue"
                             >
                               {category.name}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="py-4 text-right">
+                      <td style={{textAlign: 'right'}}>
                         {formatCurrency(book.price)}
                       </td>
-                      <td className="py-4 text-right">
-                        {book.stock}
+                      <td style={{textAlign: 'right'}}>
+                        <span className={book.stock < 5 ? 'status-indicator status-error' : 
+                                        book.stock < 20 ? 'status-indicator status-warning' : 
+                                        'status-indicator status-success'}>
+                          {book.stock}
+                        </span>
                       </td>
-                      <td className="py-4">{book.publishYear}</td>
-                      <td className="py-4">
-                        <div className="flex justify-center space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
+                      <td>{book.publishYear}</td>
+                      <td>
+                        <div className="admin-table-actions">
+                          <button 
+                            className="admin-btn-icon" 
                             onClick={() => navigate(`/admin/books/edit/${book.id}`)}
+                            title="Chỉnh sửa"
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
+                          </button>
+                          <button 
+                            className="admin-btn-icon admin-btn-danger"
                             onClick={() => handleDeleteClick(book)}
+                            title="Xóa"
                           >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -257,64 +268,72 @@ export default function BooksManagementPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex justify-between items-center mt-6">
-            <div className="text-sm text-gray-500">
+          <div className="admin-pagination">
+            <div className="admin-pagination-info">
               Hiển thị {books.length} / {totalPages * books.length} kết quả
             </div>
-            <div className="flex space-x-1">
-              <Button
-                variant="outline"
-                size="sm"
+            <div className="admin-pagination-controls">
+              <button
+                className="admin-btn admin-btn-outline"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
-              </Button>
+              </button>
               {[...Array(totalPages)].map((_, index) => (
-                <Button
+                <button
                   key={index}
-                  variant={currentPage === index + 1 ? "default" : "outline"}
-                  size="sm"
+                  className={`admin-btn ${currentPage === index + 1 ? 'admin-btn-active' : 'admin-btn-outline'}`}
                   onClick={() => setCurrentPage(index + 1)}
                 >
                   {index + 1}
-                </Button>
+                </button>
               ))}
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                className="admin-btn admin-btn-outline"
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
               >
                 <ChevronRight className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">Xác nhận xóa sách</h3>
-            <p>
-              Bạn có chắc chắn muốn xóa sách "{bookToDelete?.title}"? 
-              Hành động này không thể hoàn tác.
-            </p>
-            <div className="flex justify-end mt-6 gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowDeleteModal(false)}
-              >
-                Hủy
-              </Button>
-              <Button 
-                onClick={confirmDelete}
-                className="bg-red-500 hover:bg-red-600"
-              >
-                Xóa
-              </Button>
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
+              <h3>Xác nhận xóa sách</h3>
+            </div>
+            <div className="admin-modal-content">
+              <div className="admin-alert admin-alert-danger">
+                <AlertCircle className="h-5 w-5" />
+                <div>
+                  <p>
+                    Bạn có chắc chắn muốn xóa sách "<span className="font-medium">{bookToDelete?.title}</span>"?
+                  </p>
+                  <p className="mt-2">
+                    Hành động này không thể hoàn tác.
+                  </p>
+                </div>
+              </div>
+              <div className="admin-form-actions mt-6">
+                <button
+                  className="admin-btn admin-btn-outline"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="admin-btn admin-btn-danger"
+                >
+                  Xóa
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Eye, ChevronLeft, ChevronRight, ShoppingBag, X, RefreshCw } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent } from '../../components/ui/card';
 import orderService from '../../services/order.service';
+import './AdminPages.css';
 
 export default function OrdersManagementPage() {
   const [orders, setOrders] = useState([]);
@@ -140,102 +141,109 @@ export default function OrdersManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Quản lý Đơn hàng</h2>
-        <p className="text-gray-500">Quản lý đơn hàng của hiệu sách</p>
+    <div className="admin-container fade-in">
+      <div className="admin-header">
+        <div className="admin-title">
+          <span className="admin-title-icon"><ShoppingBag size={20} /></span>
+          <div>
+            <h2>Quản lý Đơn hàng</h2>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-            <form onSubmit={handleSearch} className="flex w-full md:w-1/2 gap-2">
-              <Input
-                type="search"
-                placeholder="Tìm theo mã đơn hàng hoặc tên khách hàng..."
+      <div className="admin-card slide-up">
+        <div className="admin-card-content">
+          <div className="admin-controls">
+            <div className="admin-search">
+              <Search className="admin-search-icon" />
+              <input 
+                type="search" 
+                placeholder="Tìm theo mã đơn hàng hoặc tên khách hàng..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
+                className="admin-form-input"
               />
-              <Button type="submit">
-                <Search className="h-4 w-4" />
-              </Button>
-            </form>
+            </div>
             
-            <div className="flex gap-2">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <select
-                  value={selectedStatus}
-                  onChange={handleStatusChange}
-                  className="border rounded-md px-3 py-1 bg-white"
-                >
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="Chờ xác nhận">Chờ xác nhận</option>
-                  <option value="Đang giao hàng">Đang giao hàng</option>
-                  <option value="Đã giao hàng">Đã giao hàng</option>
-                  <option value="Đã hủy">Đã hủy</option>
-                </select>
-              </div>
+            <div className="admin-filters">
+              <select
+                value={selectedStatus}
+                onChange={handleStatusChange}
+                className="admin-form-select"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="Chờ xác nhận">Chờ xác nhận</option>
+                <option value="Đang giao hàng">Đang giao hàng</option>
+                <option value="Đã giao hàng">Đã giao hàng</option>
+                <option value="Đã hủy">Đã hủy</option>
+              </select>
+              <button className="admin-filter-btn" onClick={handleSearch}>
+                <Filter className="h-4 w-4" /> Lọc
+              </button>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="admin-table-container">
+            <table className="admin-table">
               <thead>
-                <tr className="border-b">
-                  <th className="pb-2 text-left font-medium">Mã đơn hàng</th>
-                  <th className="pb-2 text-left font-medium">Ngày đặt</th>
-                  <th className="pb-2 text-left font-medium">Khách hàng</th>
-                  <th className="pb-2 text-right font-medium">Tổng tiền</th>
-                  <th className="pb-2 text-left font-medium">Phương thức thanh toán</th>
-                  <th className="pb-2 text-center font-medium">Trạng thái</th>
-                  <th className="pb-2 text-center font-medium">Thao tác</th>
+                <tr>
+                  <th>Mã đơn hàng</th>
+                  <th>Ngày đặt</th>
+                  <th>Khách hàng</th>
+                  <th style={{textAlign: 'right'}}>Tổng tiền</th>
+                  <th>Phương thức thanh toán</th>
+                  <th style={{textAlign: 'center'}}>Trạng thái</th>
+                  <th style={{textAlign: 'center'}}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="py-4 text-center">
-                      Đang tải dữ liệu...
+                    <td colSpan="7" className="text-center">
+                      <div className="admin-loading">
+                        <div className="admin-loading-spinner">
+                          <RefreshCw className="h-8 w-8" />
+                        </div>
+                        <span>Đang tải dữ liệu...</span>
+                      </div>
                     </td>
                   </tr>
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="py-4 text-center">
+                    <td colSpan="7" className="text-center">
                       Không có đơn hàng nào được tìm thấy.
                     </td>
                   </tr>
                 ) : (
                   orders.map((order) => (
-                    <tr key={order.id} className="border-b hover:bg-gray-50">
-                      <td className="py-4 font-medium">{order.id}</td>
-                      <td className="py-4">{formatDate(order.orderDate)}</td>
-                      <td className="py-4">
+                    <tr key={order.id}>
+                      <td className="font-medium">{order.id}</td>
+                      <td>{formatDate(order.orderDate)}</td>
+                      <td>
                         <div>{order.customer.name}</div>
-                        <div className="text-sm text-gray-500">{order.customer.phone}</div>
+                        <div className="text-sm text-text-tertiary">{order.customer.phone}</div>
                       </td>
-                      <td className="py-4 text-right font-medium">
+                      <td style={{textAlign: 'right'}} className="font-medium">
                         {formatCurrency(order.total)}
                       </td>
-                      <td className="py-4">{order.paymentMethod}</td>
-                      <td className="py-4">
-                        <div className="flex justify-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                            {order.status}
-                          </span>
-                        </div>
+                      <td>{order.paymentMethod}</td>
+                      <td style={{textAlign: 'center'}}>
+                        <span className={`status-indicator ${
+                          order.status === 'Chờ xác nhận' ? 'status-pending' : 
+                          order.status === 'Đang giao hàng' ? 'status-processing' : 
+                          order.status === 'Đã giao hàng' ? 'status-completed' : 
+                          'status-cancelled'
+                        }`}>
+                          {order.status}
+                        </span>
                       </td>
-                      <td className="py-4">
-                        <div className="flex justify-center">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleViewOrder(order)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <td className="actions">
+                        <button 
+                          className="admin-action-btn view"
+                          onClick={() => handleViewOrder(order)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -245,162 +253,199 @@ export default function OrdersManagementPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex justify-between items-center mt-6">
-            <div className="text-sm text-gray-500">
+          <div className="admin-pagination">
+            <div className="pagination-info">
               Hiển thị {orders.length} / {totalPages * orders.length} kết quả
             </div>
-            <div className="flex space-x-1">
-              <Button
-                variant="outline"
-                size="sm"
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
-              </Button>
+              </button>
               {[...Array(totalPages)].map((_, index) => (
-                <Button
+                <button
                   key={index}
-                  variant={currentPage === index + 1 ? "default" : "outline"}
-                  size="sm"
+                  className={`pagination-btn ${currentPage === index + 1 ? 'active' : ''}`}
                   onClick={() => setCurrentPage(index + 1)}
                 >
                   {index + 1}
-                </Button>
+                </button>
               ))}
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                className="pagination-btn"
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
               >
                 <ChevronRight className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Order Detail Modal */}
       {showOrderDetail && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Chi tiết đơn hàng #{selectedOrder.id}</h3>
-              <Button 
-                variant="ghost" 
-                size="sm"
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto fade-in">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="text-primary h-5 w-5" />
+                <h3 className="text-lg font-bold">Chi tiết đơn hàng #{selectedOrder.id}</h3>
+              </div>
+              <button 
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                 onClick={() => setShowOrderDetail(false)}
               >
-                &times;
-              </Button>
+                <X className="h-5 w-5" />
+              </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h4 className="font-medium mb-2">Thông tin đơn hàng</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Mã đơn hàng:</span>
-                    <span className="font-medium">{selectedOrder.id}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Ngày đặt hàng:</span>
-                    <span>{formatDate(selectedOrder.orderDate)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Trạng thái:</span>
-                    <span className={`${getStatusColor(selectedOrder.status)} px-2 py-0.5 rounded text-xs`}>
-                      {selectedOrder.status}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Phương thức thanh toán:</span>
-                    <span>{selectedOrder.paymentMethod}</span>
-                  </div>
-                  {selectedOrder.notes && (
-                    <div className="pt-1">
-                      <span className="text-gray-500">Ghi chú:</span>
-                      <p className="mt-1 p-2 bg-gray-50 rounded">{selectedOrder.notes}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 slide-up">
+              <div className="admin-card">
+                <div className="admin-card-header">
+                  <div className="admin-card-title">Thông tin đơn hàng</div>
+                </div>
+                <div className="admin-card-content">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Mã đơn hàng:</span>
+                      <span className="font-medium">{selectedOrder.id}</span>
                     </div>
-                  )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Ngày đặt hàng:</span>
+                      <span>{formatDate(selectedOrder.orderDate)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Trạng thái:</span>
+                      <span className={`status-indicator ${
+                          selectedOrder.status === 'Chờ xác nhận' ? 'status-pending' : 
+                          selectedOrder.status === 'Đang giao hàng' ? 'status-processing' : 
+                          selectedOrder.status === 'Đã giao hàng' ? 'status-completed' : 
+                          'status-cancelled'
+                        }`}>
+                        {selectedOrder.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Phương thức thanh toán:</span>
+                      <span>{selectedOrder.paymentMethod}</span>
+                    </div>
+                    {selectedOrder.notes && (
+                      <div className="pt-2 border-t mt-2">
+                        <span className="text-text-tertiary block mb-2">Ghi chú:</span>
+                        <p className="p-3 bg-bg-light rounded-md">{selectedOrder.notes}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
-              <div>
-                <h4 className="font-medium mb-2">Thông tin khách hàng</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Tên:</span>
-                    <span>{selectedOrder.customer.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Email:</span>
-                    <span>{selectedOrder.customer.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Số điện thoại:</span>
-                    <span>{selectedOrder.customer.phone}</span>
-                  </div>
-                  <div className="pt-1">
-                    <span className="text-gray-500">Địa chỉ giao hàng:</span>
-                    <p className="mt-1 p-2 bg-gray-50 rounded">{selectedOrder.shippingAddress}</p>
+              <div className="admin-card">
+                <div className="admin-card-header">
+                  <div className="admin-card-title">Thông tin khách hàng</div>
+                </div>
+                <div className="admin-card-content">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Tên:</span>
+                      <span className="font-medium">{selectedOrder.customer.name}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Email:</span>
+                      <span>{selectedOrder.customer.email}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Số điện thoại:</span>
+                      <span>{selectedOrder.customer.phone}</span>
+                    </div>
+                    <div className="pt-2 border-t mt-2">
+                      <span className="text-text-tertiary block mb-2">Địa chỉ giao hàng:</span>
+                      <p className="p-3 bg-bg-light rounded-md">{selectedOrder.shippingAddress}</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <h4 className="font-medium mb-2">Chi tiết sản phẩm</h4>
-            <div className="overflow-x-auto mb-4">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="pb-2 text-left font-medium">Sản phẩm</th>
-                    <th className="pb-2 text-center font-medium">Số lượng</th>
-                    <th className="pb-2 text-right font-medium">Đơn giá</th>
-                    <th className="pb-2 text-right font-medium">Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedOrder.items.map((item) => (
-                    <tr key={item.id} className="border-b">
-                      <td className="py-2">{item.title}</td>
-                      <td className="py-2 text-center">{item.quantity}</td>
-                      <td className="py-2 text-right">{formatCurrency(item.price / item.quantity)}</td>
-                      <td className="py-2 text-right font-medium">{formatCurrency(item.price)}</td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td colSpan="3" className="py-2 text-right font-medium">Tổng cộng:</td>
-                    <td className="py-2 text-right font-bold">{formatCurrency(selectedOrder.total)}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="admin-card mb-6 slide-up" style={{animationDelay: '0.1s'}}>
+              <div className="admin-card-header">
+                <div className="admin-card-title">Chi tiết sản phẩm</div>
+              </div>
+              <div className="admin-card-content">
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Sản phẩm</th>
+                        <th style={{textAlign: 'center'}}>Số lượng</th>
+                        <th style={{textAlign: 'right'}}>Đơn giá</th>
+                        <th style={{textAlign: 'right'}}>Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrder.items.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.title}</td>
+                          <td style={{textAlign: 'center'}}>{item.quantity}</td>
+                          <td style={{textAlign: 'right'}}>{formatCurrency(item.price / item.quantity)}</td>
+                          <td style={{textAlign: 'right'}} className="font-medium">{formatCurrency(item.price)}</td>
+                        </tr>
+                      ))}
+                      <tr>
+                        <td colSpan="3" style={{textAlign: 'right'}} className="font-medium">Tổng cộng:</td>
+                        <td style={{textAlign: 'right'}} className="font-bold">{formatCurrency(selectedOrder.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
             
             <div className="flex justify-between pt-4 border-t">
               {selectedOrder.status === 'Chờ xác nhận' && (
                 <div className="space-x-2">
-                  <Button variant="outline" className="bg-red-50 text-red-600 hover:bg-red-100">
+                  <button style={{
+                    background: 'var(--bg-white)',
+                    color: 'var(--error)',
+                    padding: '0.5rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: '500',
+                    border: '1px solid var(--error)'
+                  }}>
                     Hủy đơn
-                  </Button>
-                  <Button className="bg-green-600 hover:bg-green-700">
+                  </button>
+                  <button style={{
+                    background: 'var(--success)',
+                    color: 'white',
+                    padding: '0.5rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: '500'
+                  }}>
                     Xác nhận đơn
-                  </Button>
+                  </button>
                 </div>
               )}
               {selectedOrder.status === 'Đang giao hàng' && (
-                <Button className="bg-green-600 hover:bg-green-700">
+                <button style={{
+                  background: 'var(--success)',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: '500'
+                }}>
                   Đánh dấu đã giao
-                </Button>
+                </button>
               )}
-              <Button 
-                variant="outline" 
+              <button 
+                className="admin-filter-btn"
                 onClick={() => setShowOrderDetail(false)}
-                className="ml-auto"
+                style={{marginLeft: 'auto'}}
               >
                 Đóng
-              </Button>
+              </button>
             </div>
           </div>
         </div>

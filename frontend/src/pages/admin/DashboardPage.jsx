@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, BookOpen, PackageCheck, Users, TrendingUp } from 'lucide-react';
+import { BarChart3, BookOpen, PackageCheck, Users, TrendingUp, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import './AdminPages.css';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -86,70 +87,129 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Dashboard</h2>
-        <p className="text-gray-500">Xem tổng quan về hoạt động của cửa hàng</p>
+    <div className="admin-container fade-in">
+      <div className="admin-header">
+        <div className="admin-title">
+          <span className="admin-title-icon"><LayoutDashboard size={20} /></span>
+          <div>
+            <h2>Dashboard</h2>
+          </div>
+        </div>
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="bg-primary-50 p-3 rounded-full">
-              <BookOpen className="h-6 w-6 text-primary" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 slide-up">
+        <div className="admin-card">
+          <div className="admin-card-content p-4 flex items-center gap-4">
+            <div style={{
+              background: 'linear-gradient(135deg, var(--primary-light), var(--primary))',
+              borderRadius: '12px',
+              padding: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <BookOpen className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Tổng số sách</p>
-              <h3 className="text-2xl font-bold">{loading ? '...' : stats.totalBooks}</h3>
+              <p className="text-sm font-medium text-text-tertiary">Tổng số sách</p>
+              {loading ? (
+                <div className="h-8 flex items-center">
+                  <RefreshCw className="h-5 w-5 text-text-tertiary animate-spin" />
+                </div>
+              ) : (
+                <h3 className="text-2xl font-bold text-text-primary">{stats.totalBooks}</h3>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         
-        <Card>
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="bg-green-50 p-3 rounded-full">
-              <PackageCheck className="h-6 w-6 text-green-600" />
+        <div className="admin-card">
+          <div className="admin-card-content p-4 flex items-center gap-4">
+            <div style={{
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              borderRadius: '12px',
+              padding: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <PackageCheck className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Đơn hàng</p>
-              <h3 className="text-2xl font-bold">{loading ? '...' : stats.totalOrders}</h3>
+              <p className="text-sm font-medium text-text-tertiary">Đơn hàng</p>
+              {loading ? (
+                <div className="h-8 flex items-center">
+                  <RefreshCw className="h-5 w-5 text-text-tertiary animate-spin" />
+                </div>
+              ) : (
+                <h3 className="text-2xl font-bold text-text-primary">{stats.totalOrders}</h3>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         
-        <Card>
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="bg-blue-50 p-3 rounded-full">
-              <Users className="h-6 w-6 text-blue-600" />
+        <div className="admin-card">
+          <div className="admin-card-content p-4 flex items-center gap-4">
+            <div style={{
+              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+              borderRadius: '12px',
+              padding: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Users className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Người dùng</p>
-              <h3 className="text-2xl font-bold">{loading ? '...' : stats.totalUsers}</h3>
+              <p className="text-sm font-medium text-text-tertiary">Người dùng</p>
+              {loading ? (
+                <div className="h-8 flex items-center">
+                  <RefreshCw className="h-5 w-5 text-text-tertiary animate-spin" />
+                </div>
+              ) : (
+                <h3 className="text-2xl font-bold text-text-primary">{stats.totalUsers}</h3>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         
-        <Card>
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="bg-purple-50 p-3 rounded-full">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
+        <div className="admin-card">
+          <div className="admin-card-content p-4 flex items-center gap-4">
+            <div style={{
+              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+              borderRadius: '12px',
+              padding: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <TrendingUp className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Doanh thu</p>
-              <h3 className="text-xl font-bold">{loading ? '...' : formatCurrency(stats.totalRevenue)}</h3>
+              <p className="text-sm font-medium text-text-tertiary">Doanh thu</p>
+              {loading ? (
+                <div className="h-8 flex items-center">
+                  <RefreshCw className="h-5 w-5 text-text-tertiary animate-spin" />
+                </div>
+              ) : (
+                <h3 className="text-xl font-bold text-text-primary">{formatCurrency(stats.totalRevenue)}</h3>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mt-6">
         {/* Revenue Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Doanh thu theo tháng</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="admin-card slide-up" style={{animationDelay: '0.1s'}}>
+          <div className="admin-card-header">
+            <div className="admin-card-title">
+              <BarChart3 className="h-5 w-5 mr-2" />
+              Doanh thu theo tháng
+            </div>
+          </div>
+          <div className="admin-card-content">
             <div className="h-80">
               {/* Đây là nơi bạn sẽ hiển thị chart thực tế */}
               <div className="h-full flex flex-col justify-end">
@@ -157,46 +217,58 @@ export default function AdminDashboard() {
                   {revenueData.map((item, index) => (
                     <div key={index} className="flex flex-col items-center flex-1">
                       <div 
-                        className="w-full bg-primary rounded-t" 
                         style={{ 
+                          width: '100%',
+                          background: 'linear-gradient(180deg, var(--primary-light), var(--primary))',
+                          borderRadius: '6px 6px 0 0',
                           height: `${(item.revenue / 16000000) * 100}%`,
-                          minHeight: '20px'
+                          minHeight: '20px',
+                          boxShadow: '0 3px 10px rgba(79, 70, 229, 0.2)'
                         }}
                       />
-                      <div className="text-xs mt-2">{item.month}</div>
-                      <div className="text-xs font-medium">{formatCurrency(item.revenue).replace('₫', '').trim()}</div>
+                      <div className="text-xs mt-2 text-text-tertiary">{item.month}</div>
+                      <div className="text-xs font-medium text-text-secondary">{formatCurrency(item.revenue).replace('₫', '').trim()}</div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Recent Orders */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Đơn hàng gần đây</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+        <div className="admin-card slide-up" style={{animationDelay: '0.2s'}}>
+          <div className="admin-card-header">
+            <div className="admin-card-title">
+              <PackageCheck className="h-5 w-5 mr-2" />
+              Đơn hàng gần đây
+            </div>
+          </div>
+          <div className="admin-card-content">
+            <div className="admin-table-container">
+              <table className="admin-table">
                 <thead>
-                  <tr className="border-b">
-                    <th className="pb-2 text-left font-medium">Mã đơn</th>
-                    <th className="pb-2 text-left font-medium">Khách hàng</th>
-                    <th className="pb-2 text-left font-medium">Giá trị</th>
-                    <th className="pb-2 text-left font-medium">Trạng thái</th>
+                  <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Giá trị</th>
+                    <th style={{textAlign: 'center'}}>Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentOrders.map((order) => (
-                    <tr key={order.id} className="border-b">
-                      <td className="py-3 text-sm">{order.id}</td>
-                      <td className="py-3 text-sm">{order.customer}</td>
-                      <td className="py-3 text-sm">{formatCurrency(order.total)}</td>
-                      <td className="py-3 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
+                    <tr key={order.id}>
+                      <td className="font-medium">{order.id}</td>
+                      <td>{order.customer}</td>
+                      <td>{formatCurrency(order.total)}</td>
+                      <td style={{textAlign: 'center'}}>
+                        <span className={`status-indicator ${
+                          order.status === 'completed' ? 'status-completed' : 
+                          order.status === 'processing' ? 'status-processing' : 
+                          order.status === 'shipped' ? 'status-processing' : 
+                          order.status === 'pending' ? 'status-pending' : 
+                          'status-cancelled'
+                        }`}>
                           {getStatusText(order.status)}
                         </span>
                       </td>
@@ -205,8 +277,8 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

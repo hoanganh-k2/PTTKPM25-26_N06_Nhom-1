@@ -94,9 +94,6 @@ export default function LoginPage() {
 
           <div className="flex justify-between items-center">
             <label htmlFor="password">Mật khẩu</label>
-            <Link to="/forgot-password" className="login-forgot">
-              Quên mật khẩu?
-            </Link>
           </div>
           <div className="input-wrapper">
             <Lock className="input-icon" size={18} />
@@ -109,6 +106,9 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          <Link to="/forgot-password" className="login-forgot">
+              Quên mật khẩu?
+            </Link>
 
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? (

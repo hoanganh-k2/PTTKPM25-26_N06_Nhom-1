@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Card, CardContent } from '../../components/ui/card';
+import { Save, ArrowLeft, BookOpen, RefreshCw, FileText, Package, Bookmark } from 'lucide-react';
 import bookService from '../../services/book.service';
+import './AdminPages.css';
 
 export default function BookFormPage() {
   const { id } = useParams();
@@ -217,55 +215,58 @@ export default function BookFormPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">
-            {isEditing ? 'Chỉnh sửa sách' : 'Thêm sách mới'}
-          </h2>
-          <p className="text-gray-500">
-            {isEditing ? 'Cập nhật thông tin sách' : 'Thêm sách mới vào kho sách'}
-          </p>
+    <div className="admin-container fade-in">
+      <div className="admin-header">
+        <div className="admin-title">
+          <span className="admin-title-icon"><BookOpen size={20} /></span>
+          <div>
+            <h2>{isEditing ? 'Chỉnh sửa sách' : 'Thêm sách mới'}</h2>
+          </div>
         </div>
-        <Button variant="outline" onClick={() => navigate('/admin/books')}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
-        </Button>
+        <button className="admin-filter-btn" onClick={() => navigate('/admin/books')}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Quay lại
+        </button>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
+      <div className="admin-card slide-up">
+        <div className="admin-card-content">
           {loading ? (
-            <div className="flex justify-center py-8">Đang tải...</div>
+            <div className="admin-loading">
+              <div className="admin-loading-spinner">
+                <RefreshCw className="h-8 w-8" />
+              </div>
+              <span>Đang tải dữ liệu...</span>
+            </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label htmlFor="title" className="block font-medium">
-                    Tên sách <span className="text-red-500">*</span>
+                <div className="admin-form-group">
+                  <label htmlFor="title" className="admin-form-label">
+                    Tên sách <span className="text-error">*</span>
                   </label>
-                  <Input
+                  <input
                     id="title"
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
-                    className={errors.title ? 'border-red-500' : ''}
+                    className={`admin-form-input ${errors.title ? 'border-error' : ''}`}
                   />
                   {errors.title && (
-                    <p className="text-red-500 text-sm">{errors.title}</p>
+                    <p className="text-error text-sm mt-1">{errors.title}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="authorId" className="block font-medium">
-                    Tác giả <span className="text-red-500">*</span>
+                <div className="admin-form-group">
+                  <label htmlFor="authorId" className="admin-form-label">
+                    Tác giả <span className="text-error">*</span>
                   </label>
                   <select
                     id="authorId"
                     name="authorId"
                     value={formData.authorId}
                     onChange={handleChange}
-                    className={`w-full border rounded-md px-3 py-2 ${
-                      errors.authorId ? 'border-red-500' : 'border-gray-300'
+                    className={`admin-form-select ${
+                      errors.authorId ? 'border-error' : ''
                     }`}
                   >
                     <option value="">-- Chọn tác giả --</option>
@@ -276,21 +277,21 @@ export default function BookFormPage() {
                     ))}
                   </select>
                   {errors.authorId && (
-                    <p className="text-red-500 text-sm">{errors.authorId}</p>
+                    <p className="text-error text-sm mt-1">{errors.authorId}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="publisherId" className="block font-medium">
-                    Nhà xuất bản <span className="text-red-500">*</span>
+                <div className="admin-form-group">
+                  <label htmlFor="publisherId" className="admin-form-label">
+                    Nhà xuất bản <span className="text-error">*</span>
                   </label>
                   <select
                     id="publisherId"
                     name="publisherId"
                     value={formData.publisherId}
                     onChange={handleChange}
-                    className={`w-full border rounded-md px-3 py-2 ${
-                      errors.publisherId ? 'border-red-500' : 'border-gray-300'
+                    className={`admin-form-select ${
+                      errors.publisherId ? 'border-error' : ''
                     }`}
                   >
                     <option value="">-- Chọn nhà xuất bản --</option>
@@ -301,13 +302,13 @@ export default function BookFormPage() {
                     ))}
                   </select>
                   {errors.publisherId && (
-                    <p className="text-red-500 text-sm">{errors.publisherId}</p>
+                    <p className="text-error text-sm mt-1">{errors.publisherId}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="categories" className="block font-medium">
-                    Thể loại <span className="text-red-500">*</span>
+                <div className="admin-form-group">
+                  <label htmlFor="categories" className="admin-form-label">
+                    Thể loại <span className="text-error">*</span>
                   </label>
                   <select
                     id="categories"
@@ -315,8 +316,8 @@ export default function BookFormPage() {
                     multiple
                     value={formData.categories}
                     onChange={handleCategoryChange}
-                    className={`w-full border rounded-md px-3 py-2 min-h-[100px] ${
-                      errors.categories ? 'border-red-500' : 'border-gray-300'
+                    className={`admin-form-select min-h-[100px] ${
+                      errors.categories ? 'border-error' : ''
                     }`}
                   >
                     {categories.map((category) => (
@@ -325,91 +326,93 @@ export default function BookFormPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-gray-500 text-sm">Giữ Ctrl để chọn nhiều thể loại</p>
+                  <p className="text-text-tertiary text-sm mt-1">Giữ Ctrl để chọn nhiều thể loại</p>
                   {errors.categories && (
-                    <p className="text-red-500 text-sm">{errors.categories}</p>
+                    <p className="text-error text-sm mt-1">{errors.categories}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="price" className="block font-medium">
-                    Giá bán (VNĐ) <span className="text-red-500">*</span>
+                <div className="admin-form-group">
+                  <label htmlFor="price" className="admin-form-label">
+                    Giá bán (VNĐ) <span className="text-error">*</span>
                   </label>
-                  <Input
+                  <input
                     id="price"
                     name="price"
                     type="number"
                     value={formData.price}
                     onChange={handleChange}
-                    className={errors.price ? 'border-red-500' : ''}
+                    className={`admin-form-input ${errors.price ? 'border-error' : ''}`}
                   />
                   {errors.price && (
-                    <p className="text-red-500 text-sm">{errors.price}</p>
+                    <p className="text-error text-sm mt-1">{errors.price}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="stock" className="block font-medium">
-                    Số lượng <span className="text-red-500">*</span>
+                <div className="admin-form-group">
+                  <label htmlFor="stock" className="admin-form-label">
+                    Số lượng <span className="text-error">*</span>
                   </label>
-                  <Input
+                  <input
                     id="stock"
                     name="stock"
                     type="number"
                     value={formData.stock}
                     onChange={handleChange}
-                    className={errors.stock ? 'border-red-500' : ''}
+                    className={`admin-form-input ${errors.stock ? 'border-error' : ''}`}
                   />
                   {errors.stock && (
-                    <p className="text-red-500 text-sm">{errors.stock}</p>
+                    <p className="text-error text-sm mt-1">{errors.stock}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="publishYear" className="block font-medium">
-                    Năm xuất bản <span className="text-red-500">*</span>
+                <div className="admin-form-group">
+                  <label htmlFor="publishYear" className="admin-form-label">
+                    Năm xuất bản <span className="text-error">*</span>
                   </label>
-                  <Input
+                  <input
                     id="publishYear"
                     name="publishYear"
                     type="number"
                     value={formData.publishYear}
                     onChange={handleChange}
-                    className={errors.publishYear ? 'border-red-500' : ''}
+                    className={`admin-form-input ${errors.publishYear ? 'border-error' : ''}`}
                   />
                   {errors.publishYear && (
-                    <p className="text-red-500 text-sm">{errors.publishYear}</p>
+                    <p className="text-error text-sm mt-1">{errors.publishYear}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="pages" className="block font-medium">
+                <div className="admin-form-group">
+                  <label htmlFor="pages" className="admin-form-label">
                     Số trang
                   </label>
-                  <Input
+                  <input
                     id="pages"
                     name="pages"
                     type="number"
                     value={formData.pages}
                     onChange={handleChange}
+                    className="admin-form-input"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="isbn" className="block font-medium">
+                <div className="admin-form-group">
+                  <label htmlFor="isbn" className="admin-form-label">
                     ISBN
                   </label>
-                  <Input
+                  <input
                     id="isbn"
                     name="isbn"
                     value={formData.isbn}
                     onChange={handleChange}
+                    className="admin-form-input"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="description" className="block font-medium">
+              <div className="admin-form-group">
+                <label htmlFor="description" className="admin-form-label">
                   Mô tả
                 </label>
                 <textarea
@@ -418,24 +421,25 @@ export default function BookFormPage() {
                   rows="5"
                   value={formData.description}
                   onChange={handleChange}
-                  className="w-full border rounded-md px-3 py-2 border-gray-300"
+                  className="admin-form-textarea"
                 ></textarea>
               </div>
 
               <div className="flex justify-end">
-                <Button
+                <button
                   type="submit"
                   disabled={submitting}
-                  className="flex items-center gap-2"
+                  className="admin-add-btn"
+                  style={{opacity: submitting ? 0.7 : 1}}
                 >
                   <Save className="h-4 w-4" />
                   {submitting ? 'Đang lưu...' : 'Lưu'}
-                </Button>
+                </button>
               </div>
             </form>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

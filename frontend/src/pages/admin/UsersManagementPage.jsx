@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, UserPlus, Edit, UserX, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Card, CardContent } from '../../components/ui/card';
+import { Search, Filter, UserPlus, Edit, UserX, ChevronLeft, ChevronRight, Mail, Users } from 'lucide-react';
+import './AdminPages.css';
 
 export default function UsersManagementPage() {
   const [users, setUsers] = useState([]);
@@ -220,287 +218,343 @@ export default function UsersManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Quản lý Người dùng</h2>
-          <p className="text-gray-500">Quản lý tài khoản người dùng</p>
+    <div className="admin-container fade-in">
+      <div className="admin-header">
+        <div className="admin-title">
+          <span className="admin-title-icon"><Users size={20} /></span>
+          <div>
+            <h2>Quản lý Người dùng</h2> 
+          </div>
         </div>
-        <Button onClick={openAddUserForm}>
-          <UserPlus className="mr-2 h-4 w-4" /> Thêm người dùng
-        </Button>
+        <button 
+          onClick={openAddUserForm}
+          className="admin-btn admin-btn-primary"
+        >
+          <UserPlus className="h-4 w-4" /> Thêm người dùng
+        </button>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-            <form onSubmit={handleSearch} className="flex w-full md:w-1/2 gap-2">
-              <Input
+      <div className="admin-card slide-up">
+        <div className="admin-card-content">
+          <div className="admin-controls">
+            <form onSubmit={handleSearch} className="admin-search">
+              <Search className="admin-search-icon" />
+              <input
                 type="search"
                 placeholder="Tìm theo tên, email, số điện thoại..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
+                className="admin-form-input"
               />
-              <Button type="submit">
-                <Search className="h-4 w-4" />
-              </Button>
             </form>
             
-            <div className="flex gap-2">
+            <div className="admin-filters">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500" />
                 <select
                   value={selectedRole}
                   onChange={handleRoleChange}
-                  className="border rounded-md px-3 py-1 bg-white"
+                  className="admin-form-select"
                 >
                   <option value="">Tất cả vai trò</option>
                   <option value="admin">Admin</option>
                   <option value="customer">Khách hàng</option>
                 </select>
+                <button className="admin-filter-btn" onClick={fetchUsers}>
+                  <Filter className="h-4 w-4" /> Lọc
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="pb-2 text-left font-medium">ID</th>
-                  <th className="pb-2 text-left font-medium">Tên người dùng</th>
-                  <th className="pb-2 text-left font-medium">Email</th>
-                  <th className="pb-2 text-left font-medium">Số điện thoại</th>
-                  <th className="pb-2 text-center font-medium">Vai trò</th>
-                  <th className="pb-2 text-left font-medium">Ngày đăng ký</th>
-                  <th className="pb-2 text-center font-medium">Trạng thái</th>
-                  <th className="pb-2 text-center font-medium">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan="8" className="py-4 text-center">
-                      Đang tải dữ liệu...
-                    </td>
-                  </tr>
-                ) : users.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="py-4 text-center">
-                      Không có người dùng nào được tìm thấy.
-                    </td>
-                  </tr>
-                ) : (
-                  users.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-gray-50">
-                      <td className="py-4">{user.id}</td>
-                      <td className="py-4 font-medium">{user.name}</td>
-                      <td className="py-4">{user.email}</td>
-                      <td className="py-4">{user.phone}</td>
-                      <td className="py-4 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.role === 'admin' 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.role === 'admin' ? 'Admin' : 'Khách hàng'}
-                        </span>
-                      </td>
-                      <td className="py-4">{formatDate(user.registeredDate)}</td>
-                      <td className="py-4 text-center">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          user.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.status === 'active' ? 'Đang hoạt động' : 'Đã vô hiệu hóa'}
-                        </span>
-                      </td>
-                      <td className="py-4">
-                        <div className="flex justify-center space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => openEditUserForm(user)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteClick(user)}
-                            disabled={user.role === 'admin'} // Không cho phép xóa admin
-                          >
-                            <UserX className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </td>
+          {loading ? (
+            <div className="admin-loading">
+              <div className="admin-loading-spinner">
+                <Search className="h-8 w-8" />
+              </div>
+              <span>Đang tải dữ liệu...</span>
+            </div>
+          ) : (
+            <>
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Tên người dùng</th>
+                      <th>Email</th>
+                      <th>Số điện thoại</th>
+                      <th className="text-center">Vai trò</th>
+                      <th>Ngày đăng ký</th>
+                      <th className="text-center">Trạng thái</th>
+                      <th className="text-center">Thao tác</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {users.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" className="text-center">
+                          <div className="admin-empty-state">
+                            <Users size={24} />
+                            <span>Không có người dùng nào được tìm thấy</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((user) => (
+                        <tr key={user.id}>
+                          <td>{user.id}</td>
+                          <td className="font-medium">{user.name}</td>
+                          <td>{user.email}</td>
+                          <td>{user.phone}</td>
+                          <td className="text-center">
+                            <span className={`admin-badge ${
+                              user.role === 'admin' 
+                                ? 'admin-badge-purple' 
+                                : 'admin-badge-blue'
+                            }`}>
+                              {user.role === 'admin' ? 'Admin' : 'Khách hàng'}
+                            </span>
+                          </td>
+                          <td>{formatDate(user.registeredDate)}</td>
+                          <td className="text-center">
+                            <span className={`admin-badge ${
+                              user.status === 'active' 
+                                ? 'admin-badge-green' 
+                                : 'admin-badge-red'
+                            }`}>
+                              {user.status === 'active' ? 'Đang hoạt động' : 'Đã vô hiệu hóa'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="admin-table-actions">
+                              <button 
+                                className="admin-btn-icon"
+                                onClick={() => openEditUserForm(user)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button 
+                                className="admin-btn-icon admin-btn-danger"
+                                onClick={() => handleDeleteClick(user)}
+                                disabled={user.role === 'admin'} // Không cho phép xóa admin
+                              >
+                                <UserX className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Pagination */}
-          <div className="flex justify-between items-center mt-6">
-            <div className="text-sm text-gray-500">
-              Hiển thị {users.length} / {totalPages * users.length} kết quả
-            </div>
-            <div className="flex space-x-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              {[...Array(totalPages)].map((_, index) => (
-                <Button
-                  key={index}
-                  variant={currentPage === index + 1 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(index + 1)}
-                >
-                  {index + 1}
-                </Button>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              {/* Pagination */}
+              <div className="admin-pagination">
+                <div className="admin-pagination-info">
+                  Hiển thị {users.length} / {totalPages * users.length} kết quả
+                </div>
+                <div className="admin-pagination-controls">
+                  <button
+                    className="admin-btn admin-btn-outline"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {totalPages <= 5 ? (
+                    [...Array(totalPages)].map((_, index) => (
+                      <button
+                        key={index}
+                        className={`admin-btn ${currentPage === index + 1 ? 'admin-btn-active' : 'admin-btn-outline'}`}
+                        onClick={() => setCurrentPage(index + 1)}
+                      >
+                        {index + 1}
+                      </button>
+                    ))
+                  ) : (
+                    <>
+                      {/* Hiển thị số trang đầu tiên */}
+                      <button
+                        className={`admin-btn ${currentPage === 1 ? 'admin-btn-active' : 'admin-btn-outline'}`}
+                        onClick={() => setCurrentPage(1)}
+                      >
+                        1
+                      </button>
+                      
+                      {/* Hiển thị ... nếu không ở những trang đầu */}
+                      {currentPage > 3 && <span className="admin-pagination-ellipsis">...</span>}
+                      
+                      {/* Hiển thị các trang xung quanh trang hiện tại */}
+                      {[...Array(totalPages)].map((_, index) => {
+                        const pageNum = index + 1;
+                        if (
+                          (pageNum !== 1 && pageNum !== totalPages) && // Không phải trang đầu tiên hoặc cuối cùng
+                          (Math.abs(pageNum - currentPage) <= 1) // Trong phạm vi 1 trang so với trang hiện tại
+                        ) {
+                          return (
+                            <button
+                              key={index}
+                              className={`admin-btn ${currentPage === pageNum ? 'admin-btn-active' : 'admin-btn-outline'}`}
+                              onClick={() => setCurrentPage(pageNum)}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })}
+                      
+                      {/* Hiển thị ... nếu không ở những trang cuối */}
+                      {currentPage < totalPages - 2 && <span className="admin-pagination-ellipsis">...</span>}
+                      
+                      {/* Hiển thị số trang cuối cùng */}
+                      <button
+                        className={`admin-btn ${currentPage === totalPages ? 'admin-btn-active' : 'admin-btn-outline'}`}
+                        onClick={() => setCurrentPage(totalPages)}
+                      >
+                        {totalPages}
+                      </button>
+                    </>
+                  )}
+                  <button
+                    className="admin-btn admin-btn-outline"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* User Form Modal */}
       {showUserForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">
-              {editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
-            </h3>
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
+              <h3>
+                {editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
+              </h3>
+            </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="block font-medium">
-                  Tên người dùng <span className="text-red-500">*</span>
+            <form onSubmit={handleSubmit} className="admin-form">
+              <div className="admin-form-group">
+                <label htmlFor="name" className="admin-form-label">
+                  Tên người dùng <span className="text-error">*</span>
                 </label>
-                <Input
+                <input
                   id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleFormChange}
-                  className={errors.name ? 'border-red-500' : ''}
+                  className={`admin-form-input ${errors.name ? 'admin-form-input-error' : ''}`}
                 />
                 {errors.name && (
-                  <p className="text-red-500 text-sm">{errors.name}</p>
+                  <p className="admin-form-error">{errors.name}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="email" className="block font-medium">
-                  Email <span className="text-red-500">*</span>
+              <div className="admin-form-group">
+                <label htmlFor="email" className="admin-form-label">
+                  Email <span className="text-error">*</span>
                 </label>
-                <Input
+                <input
                   id="email"
                   name="email"
                   type="email"
                   value={formData.email}
                   onChange={handleFormChange}
-                  className={errors.email ? 'border-red-500' : ''}
+                  className={`admin-form-input ${errors.email ? 'admin-form-input-error' : ''}`}
                 />
                 {errors.email && (
-                  <p className="text-red-500 text-sm">{errors.email}</p>
+                  <p className="admin-form-error">{errors.email}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="phone" className="block font-medium">
-                  Số điện thoại <span className="text-red-500">*</span>
+              <div className="admin-form-group">
+                <label htmlFor="phone" className="admin-form-label">
+                  Số điện thoại <span className="text-error">*</span>
                 </label>
-                <Input
+                <input
                   id="phone"
                   name="phone"
                   value={formData.phone}
                   onChange={handleFormChange}
-                  className={errors.phone ? 'border-red-500' : ''}
+                  className={`admin-form-input ${errors.phone ? 'admin-form-input-error' : ''}`}
                 />
                 {errors.phone && (
-                  <p className="text-red-500 text-sm">{errors.phone}</p>
+                  <p className="admin-form-error">{errors.phone}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="role" className="block font-medium">
-                  Vai trò <span className="text-red-500">*</span>
+              <div className="admin-form-group">
+                <label htmlFor="role" className="admin-form-label">
+                  Vai trò <span className="text-error">*</span>
                 </label>
                 <select
                   id="role"
                   name="role"
                   value={formData.role}
                   onChange={handleFormChange}
-                  className="w-full border rounded-md px-3 py-2 border-gray-300"
+                  className="admin-form-select"
                 >
                   <option value="customer">Khách hàng</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="password" className="block font-medium">
-                  Mật khẩu {!editingUser && <span className="text-red-500">*</span>}
+              <div className="admin-form-group">
+                <label htmlFor="password" className="admin-form-label">
+                  Mật khẩu {!editingUser && <span className="text-error">*</span>}
                 </label>
-                <Input
+                <input
                   id="password"
                   name="password"
                   type="password"
                   value={formData.password}
                   onChange={handleFormChange}
-                  className={errors.password ? 'border-red-500' : ''}
+                  className={`admin-form-input ${errors.password ? 'admin-form-input-error' : ''}`}
                 />
                 {editingUser && (
-                  <p className="text-gray-500 text-sm">Để trống nếu không muốn thay đổi mật khẩu</p>
+                  <p className="text-text-tertiary text-sm">Để trống nếu không muốn thay đổi mật khẩu</p>
                 )}
                 {errors.password && (
-                  <p className="text-red-500 text-sm">{errors.password}</p>
+                  <p className="admin-form-error">{errors.password}</p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="block font-medium">
-                  Xác nhận mật khẩu {!editingUser && <span className="text-red-500">*</span>}
+              <div className="admin-form-group">
+                <label htmlFor="confirmPassword" className="admin-form-label">
+                  Xác nhận mật khẩu {!editingUser && <span className="text-error">*</span>}
                 </label>
-                <Input
+                <input
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={handleFormChange}
-                  className={errors.confirmPassword ? 'border-red-500' : ''}
+                  className={`admin-form-input ${errors.confirmPassword ? 'admin-form-input-error' : ''}`}
                 />
                 {errors.confirmPassword && (
-                  <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
+                  <p className="admin-form-error">{errors.confirmPassword}</p>
                 )}
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button 
+              <div className="admin-form-actions">
+                <button 
                   type="button"
-                  variant="outline" 
+                  className="admin-btn admin-btn-outline"
                   onClick={() => setShowUserForm(false)}
                 >
                   Hủy
-                </Button>
-                <Button type="submit">
+                </button>
+                <button type="submit" className="admin-btn admin-btn-primary">
                   {editingUser ? 'Cập nhật' : 'Thêm'}
-                </Button>
+                </button>
               </div>
             </form>
           </div>
@@ -509,26 +563,37 @@ export default function UsersManagementPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">Xác nhận vô hiệu hóa tài khoản</h3>
-            <p>
-              Bạn có chắc chắn muốn vô hiệu hóa tài khoản người dùng "{userToDelete?.name}"?
-              Người dùng sẽ không thể đăng nhập vào hệ thống.
-            </p>
-            <div className="flex justify-end mt-6 gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowDeleteModal(false)}
-              >
-                Hủy
-              </Button>
-              <Button 
-                onClick={confirmDelete}
-                className="bg-red-500 hover:bg-red-600"
-              >
-                Vô hiệu hóa
-              </Button>
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
+              <h3>Xác nhận vô hiệu hóa tài khoản</h3>
+            </div>
+            <div className="admin-modal-content">
+              <div className="admin-alert admin-alert-warning">
+                <UserX className="h-5 w-5" />
+                <div>
+                  <p>
+                    Bạn có chắc chắn muốn vô hiệu hóa tài khoản người dùng <strong>"{userToDelete?.name}"</strong>?
+                  </p>
+                  <p className="mt-2">
+                    Người dùng sẽ không thể đăng nhập vào hệ thống.
+                  </p>
+                </div>
+              </div>
+              <div className="admin-form-actions mt-6">
+                <button 
+                  className="admin-btn admin-btn-outline"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  className="admin-btn admin-btn-danger"
+                >
+                  Vô hiệu hóa
+                </button>
+              </div>
             </div>
           </div>
         </div>

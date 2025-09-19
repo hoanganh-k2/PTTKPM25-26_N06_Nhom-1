@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import './AdminLayout.css';
 
 // Icons
 import { 
@@ -8,11 +9,15 @@ import {
   PackageCheck, 
   Users, 
   BarChart3, 
-  Settings, 
   LogOut, 
   ChevronDown,
   Menu,
-  X
+  X,
+  LibraryBig,
+  Bell,
+  Search,
+  Package,
+  LayoutDashboard
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -20,19 +25,20 @@ export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Điều hướng menu dựa theo vai trò
+  // Điều hướng menu dựa theo vai trò 
   const adminNavigation = [
-    { name: 'Dashboard', href: '/admin', icon: <BarChart3 className="w-5 h-5" /> },
-    { name: 'Quản lý Sách', href: '/admin/books', icon: <BookOpen className="w-5 h-5" /> },
-    { name: 'Quản lý Đơn hàng', href: '/admin/orders', icon: <PackageCheck className="w-5 h-5" /> },
-    { name: 'Quản lý Người dùng', href: '/admin/users', icon: <Users className="w-5 h-5" /> },
-    { name: 'Cài đặt', href: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
+    { name: 'Dashboard', href: '/admin', icon: <LayoutDashboard size={20} /> },
+    { name: 'Quản lý Sản phẩm', href: '/admin/books', icon: <BookOpen size={20} /> },
+    { name: 'Quản lý Đơn hàng', href: '/admin/orders', icon: <Package size={20} /> },
+    { name: 'Quản lý Người dùng', href: '/admin/users', icon: <Users size={20} /> },
+    { name: 'Cập nhật Trạng thái Kho', href: '/admin/inventory', icon: <LibraryBig size={20} /> },
+    { name: 'Xác nhận Đơn hàng', href: '/admin/warehouse-orders', icon: <PackageCheck size={20} /> },
   ];
 
   const warehouseNavigation = [
-    { name: 'Dashboard', href: '/admin', icon: <BarChart3 className="w-5 h-5" /> },
-    { name: 'Quản lý Kho', href: '/admin/inventory', icon: <BookOpen className="w-5 h-5" /> },
-    { name: 'Xác nhận Đơn hàng', href: '/admin/warehouse-orders', icon: <PackageCheck className="w-5 h-5" /> },
+    { name: 'Dashboard', href: '/admin', icon: <LayoutDashboard size={20} /> },
+    { name: 'Cập nhật Trạng thái Kho', href: '/admin/inventory', icon: <LibraryBig size={20} /> },
+    { name: 'Xác nhận Đơn hàng', href: '/admin/warehouse-orders', icon: <PackageCheck size={20} /> },
   ];
   
   // Chọn menu phù hợp với vai trò
@@ -58,90 +64,95 @@ export default function AdminLayout() {
   }
   
   // Chỉ cho phép admin và thủ kho truy cập
+  console.log('Auth status:', { isAdmin, isWarehouseManager, currentUser });
   if (!isAdmin && !isWarehouseManager) {
+    console.log('Redirecting to home - no permission');
     return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="admin-layout flex h-screen bg-gray-100">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden" 
           onClick={toggleSidebar}
+          style={{backdropFilter: 'blur(3px)'}}
         />
       )}
 
       {/* Sidebar */}
       <div 
-        className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-30 ${
+        className={`admin-sidebar fixed inset-y-0 left-0 w-64 transform transition-transform duration-300 ease-in-out z-30 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b">
-          <div className="text-xl font-bold text-primary">Admin Dashboard</div>
+        <div className="admin-sidebar-header flex items-center justify-between">
+          <div className="admin-sidebar-title">
+            <span className="logo-icon">
+              <BookOpen size={16} />
+            </span>
+            Bookstore Admin
+          </div>
           <button 
-            className="p-1 rounded-md -mr-1 lg:hidden" 
+            className="p-2 rounded-md text-white lg:hidden" 
             onClick={toggleSidebar}
           >
-            <X className="w-6 h-6" />
+            <X size={20} />
           </button>
         </div>
         
-        <nav className="mt-5 px-3 space-y-1">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors ${
-                isActive(item.href)
-                  ? 'bg-primary-50 text-primary'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              {item.icon}
-              <span className="ml-3">{item.name}</span>
-            </Link>
+        <nav className="admin-sidebar-nav">
+          {navigation.map((item, index) => (
+            <div key={item.name} className="admin-nav-item" style={{"--index": index}}>
+              <Link
+                to={item.href}
+                className={`admin-nav-link ${isActive(item.href) ? 'active' : ''}`}
+              >
+                <span className="admin-nav-icon">{item.icon}</span>
+                <span className="admin-nav-text">{item.name}</span>
+              </Link>
+            </div>
           ))}
         </nav>
 
-        <div className="absolute bottom-0 w-full border-t border-gray-200">
+        <div className="admin-sidebar-footer">
           <button
             onClick={handleLogout}
-            className="flex items-center px-6 py-4 w-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            className="admin-logout-btn"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut size={20} className="admin-logout-icon" />
             <span className="ml-3">Đăng xuất</span>
           </button>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col lg:pl-64">
+      <div className="admin-content">
         {/* Top navbar */}
-        <header className="bg-white shadow-sm z-10">
-          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <header className="admin-header">
+          <div className="admin-header-content">
             <button 
-              className="p-2 lg:hidden" 
+              className="admin-mobile-toggle lg:hidden" 
               onClick={toggleSidebar}
             >
-              <Menu className="w-6 h-6" />
+              <Menu size={24} />
             </button>
-            <div className="flex-1 lg:ml-4"></div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <div className="relative ml-3">
-                  <div>
-                    <button className="flex text-sm rounded-full focus:outline-none">
-                      <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
-                        A
-                      </div>
-                      <span className="hidden md:flex items-center ml-2">
-                        Admin
-                        <ChevronDown className="w-4 h-4 ml-1" />
-                      </span>
-                    </button>
-                  </div>
+            
+            <div className="admin-header-right">
+              <div className="admin-notification">
+                <button className="admin-notification-btn">
+                  <Bell size={20} />
+                </button>
+              </div>
+              
+              <div className="admin-user-profile">
+                <div className="admin-avatar">
+                  {currentUser?.fullName?.charAt(0) || 'A'}
+                </div>
+                <div className="admin-user-info">
+                  <span className="admin-user-name">{currentUser?.fullName || 'Admin'}</span>
+                  <ChevronDown size={16} className="admin-chevron" />
                 </div>
               </div>
             </div>
@@ -149,7 +160,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Main content area */}
-        <main className="flex-1 overflow-y-auto bg-gray-100 p-4 sm:p-6 lg:p-8">
+        <main className="admin-main">
           <Outlet />
         </main>
       </div>
