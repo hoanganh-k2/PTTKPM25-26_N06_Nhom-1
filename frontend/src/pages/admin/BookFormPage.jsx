@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, BookOpen, RefreshCw, FileText, Package, Bookmark } from 'lucide-react';
 import bookService from '../../services/book.service';
+import categoryService from '../../services/category.service';
+import authorService from '../../services/author.service';
+import publisherService from '../../services/publisher.service';
 import './AdminPages.css';
 
 export default function BookFormPage() {
@@ -43,74 +46,58 @@ export default function BookFormPage() {
   const fetchBookDetails = async () => {
     setLoading(true);
     try {
-      // Trong môi trường thực tế sẽ gọi API
-      setTimeout(() => {
-        // Giả lập dữ liệu
-        const mockBook = {
-          id: '1',
-          title: 'Đắc Nhân Tâm',
-          authorId: '1',
-          publisherId: '1',
-          categories: ['1'],
-          description: 'Đắc nhân tâm (tên tiếng Anh: How to Win Friends and Influence People) là một quyển sách nhằm tự giúp bản thân bán chạy nhất từ trước đến nay. Quyển sách này do Dale Carnegie viết và đã được xuất bản lần đầu vào năm 1936.',
-          price: 120000,
-          stock: 50,
-          publishYear: 2016,
-          pages: 320,
-          isbn: '9786047563067'
-        };
-        
-        setFormData(mockBook);
-        setLoading(false);
-      }, 500);
+      const response = await bookService.getBookById(id);
+      
+      // Chuyển đổi dữ liệu để phù hợp với form
+      const bookData = {
+        title: response.title || '',
+        authorId: response.authorId || '',
+        publisherId: response.publisherId || '',
+        categories: response.categoryIds || [],
+        description: response.description || '',
+        price: response.price || '',
+        stock: response.stock || '',
+        publishYear: response.publishYear || '',
+        pages: response.pageCount || '',
+        isbn: response.ISBN || ''
+      };
+      
+      setFormData(bookData);
+      setLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy thông tin sách:', error);
       setLoading(false);
+      alert('Có lỗi xảy ra khi lấy thông tin sách');
     }
   };
 
   const fetchCategories = async () => {
     try {
-      // Giả lập dữ liệu
-      const mockCategories = [
-        { id: '1', name: 'Tự lực' },
-        { id: '2', name: 'Tiểu thuyết' },
-        { id: '3', name: 'Thiếu nhi' },
-        { id: '4', name: 'Kinh tế' }
-      ];
-      setCategories(mockCategories);
+      const response = await categoryService.getAllCategories();
+      setCategories(response.categories || response || []);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách thể loại:', error);
+      setCategories([]);
     }
   };
 
   const fetchAuthors = async () => {
     try {
-      // Giả lập dữ liệu
-      const mockAuthors = [
-        { id: '1', name: 'Dale Carnegie' },
-        { id: '2', name: 'Paulo Coelho' },
-        { id: '3', name: 'Nguyễn Nhật Ánh' },
-        { id: '4', name: 'Tô Hoài' }
-      ];
-      setAuthors(mockAuthors);
+      const response = await authorService.getAllAuthors();
+      setAuthors(response.authors || response || []);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách tác giả:', error);
+      setAuthors([]);
     }
   };
 
   const fetchPublishers = async () => {
     try {
-      // Giả lập dữ liệu
-      const mockPublishers = [
-        { id: '1', name: 'NXB Tổng hợp TP.HCM' },
-        { id: '2', name: 'NXB Trẻ' },
-        { id: '3', name: 'NXB Kim Đồng' },
-        { id: '4', name: 'NXB Giáo dục' }
-      ];
-      setPublishers(mockPublishers);
+      const response = await publisherService.getAllPublishers();
+      setPublishers(response.publishers || response || []);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách nhà xuất bản:', error);
+      setPublishers([]);
     }
   };
 
@@ -196,20 +183,33 @@ export default function BookFormPage() {
     
     setSubmitting(true);
     try {
+      // Chuẩn bị dữ liệu để gửi lên API
+      const apiData = {
+        title: formData.title,
+        description: formData.description,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
+        authorId: formData.authorId,
+        publisherId: formData.publisherId,
+        categoryIds: formData.categories,
+        publishYear: Number(formData.publishYear),
+        pageCount: Number(formData.pages) || undefined,
+        ISBN: formData.isbn || undefined
+      };
+
       if (isEditing) {
-        // Gọi API cập nhật sách (giả lập)
-        console.log('Cập nhật sách:', formData);
+        await bookService.updateBook(id, apiData);
+        alert('Cập nhật sách thành công!');
       } else {
-        // Gọi API thêm sách mới (giả lập)
-        console.log('Thêm sách mới:', formData);
+        await bookService.createBook(apiData);
+        alert('Thêm sách mới thành công!');
       }
       
       // Chuyển về trang quản lý sách sau khi thành công
-      setTimeout(() => {
-        navigate('/admin/books');
-      }, 500);
+      navigate('/admin/books');
     } catch (error) {
       console.error('Lỗi khi lưu sách:', error);
+      alert(`Có lỗi xảy ra: ${error.message || 'Vui lòng thử lại'}`);
       setSubmitting(false);
     }
   };

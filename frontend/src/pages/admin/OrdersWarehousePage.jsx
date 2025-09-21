@@ -24,16 +24,18 @@ export default function OrdersWarehousePage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await orderService.getOrders({
+      const response = await orderService.getAllOrders({
         page: currentPage,
         limit: 10,
         status: statusFilter
       });
       
-      setOrders(response.orders);
-      setTotalPages(Math.ceil(response.total / 10));
+      setOrders(response.orders || []);
+      setTotalPages(Math.ceil((response.total || 0) / 10));
     } catch (error) {
       console.error("Error fetching orders:", error);
+      setOrders([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -41,10 +43,25 @@ export default function OrdersWarehousePage() {
 
   const handleConfirmOrder = async (orderId) => {
     try {
-      await inventoryService.confirmOrder(orderId);
+      // Cập nhật trạng thái đơn hàng thành "shipped" (đã giao cho shipper)
+      await orderService.updateOrderStatus(orderId, 'shipped');
+      // Refresh danh sách đơn hàng
       fetchOrders();
     } catch (error) {
       console.error("Error confirming order:", error);
+      alert("Có lỗi xảy ra khi xác nhận đơn hàng");
+    }
+  };
+
+  const handleProcessOrder = async (orderId) => {
+    try {
+      // Cập nhật trạng thái đơn hàng thành "processing" (đang xử lý)
+      await orderService.updateOrderStatus(orderId, 'processing');
+      // Refresh danh sách đơn hàng
+      fetchOrders();
+    } catch (error) {
+      console.error("Error processing order:", error);
+      alert("Có lỗi xảy ra khi xử lý đơn hàng");
     }
   };
 
@@ -177,7 +194,26 @@ export default function OrdersWarehousePage() {
                       Chi tiết
                     </button>
                     
-                    {(order.status === 'pending' || order.status === 'processing') && (
+                    {order.status === 'pending' && (
+                      <button 
+                        onClick={() => handleProcessOrder(order.id)}
+                        style={{
+                          background: 'var(--warning)',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: 'var(--radius-md)',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <Package size={16} />
+                        Bắt đầu xử lý
+                      </button>
+                    )}
+                    
+                    {order.status === 'processing' && (
                       <button 
                         onClick={() => handleConfirmOrder(order.id)}
                         style={{

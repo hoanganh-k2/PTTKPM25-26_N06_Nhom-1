@@ -28,7 +28,7 @@ export class OrdersService {
   }
 
   // Format đối tượng order từ DB
-  private formatOrder(order: any): OrderResponseDto {
+  private formatOrder(order: any, user?: any): OrderResponseDto {
     return {
       id: order.id,
       userId: order.user_id,
@@ -39,6 +39,12 @@ export class OrdersService {
       paymentMethod: order.payment_method,
       paymentStatus: order.payment_status,
       items: [], // Sẽ được điền sau
+      user: user ? {
+        id: user.id,
+        fullName: user.full_name,
+        email: user.email,
+        phone: user.phone
+      } : undefined,
       createdAt: new Date(order.created_at),
       updatedAt: new Date(order.updated_at),
     };
@@ -52,7 +58,17 @@ export class OrdersService {
     totalPages: number;
   }> {
     try {
-      let query = this.supabase.from('orders').select('*', { count: 'exact' });
+      let query = this.supabase
+        .from('orders')
+        .select(`
+          *,
+          users!orders_user_id_fkey (
+            id,
+            full_name,
+            email,
+            phone
+          )
+        `, { count: 'exact' });
 
       // Lọc theo user_id
       if (params.userId) {
@@ -97,7 +113,7 @@ export class OrdersService {
       const formattedOrders: OrderResponseDto[] = [];
       
       for (const order of orders) {
-        const formattedOrder = this.formatOrder(order);
+        const formattedOrder = this.formatOrder(order, order.users);
         
         // Lấy chi tiết sản phẩm
         const { data: items, error: itemsError } = await this.supabase
@@ -131,10 +147,18 @@ export class OrdersService {
   // Lấy chi tiết đơn hàng theo ID
   async findById(id: string): Promise<OrderResponseDto> {
     try {
-      // Lấy thông tin đơn hàng
+      // Lấy thông tin đơn hàng với thông tin user
       const { data: order, error } = await this.supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          users!orders_user_id_fkey (
+            id,
+            full_name,
+            email,
+            phone
+          )
+        `)
         .eq('id', id)
         .single();
 
@@ -142,7 +166,7 @@ export class OrdersService {
         throw new NotFoundException(`Không tìm thấy đơn hàng với ID: ${id}`);
       }
 
-      const formattedOrder = this.formatOrder(order);
+      const formattedOrder = this.formatOrder(order, order.users);
 
       // Lấy chi tiết sản phẩm trong đơn hàng
       const { data: items, error: itemsError } = await this.supabase
@@ -423,6 +447,101 @@ export class OrdersService {
       }
       
       return stats;
+    } catch (error) {
+      throw new BadRequestException(`Lỗi khi lấy thống kê đơn hàng: ${error.message}`);
+    }
+  }
+
+  // Cập nhật trạng thái đơn hàng
+  async updateStatus(orderId: string, status: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Kiểm tra đơn hàng tồn tại
+      await this.findById(orderId);
+
+      // Cập nhật trạng thái
+      const { error } = await this.supabase
+        .from('orders')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', orderId);
+
+      if (error) {
+        throw new BadRequestException(`Lỗi khi cập nhật trạng thái đơn hàng: ${error.message}`);
+      }
+
+      return {
+        success: true,
+        message: `Cập nhật trạng thái đơn hàng thành ${status} thành công`,
+      };
+    } catch (error) {
+      throw new BadRequestException(`Lỗi khi cập nhật trạng thái đơn hàng: ${error.message}`);
+    }
+  }
+
+  // Lấy thống kê đơn hàng theo thời gian
+  async getOrderStatistics(period: string = 'month') {
+    try {
+      const now = new Date();
+      let startDate: Date;
+      let groupBy: string;
+
+      switch (period) {
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          groupBy = 'day';
+          break;
+        case 'year':
+          startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+          groupBy = 'month';
+          break;
+        case 'month':
+        default:
+          startDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+          groupBy = 'month';
+          break;
+      }
+
+      const { data: orders, error } = await this.supabase
+        .from('orders')
+        .select('created_at, total_amount, status')
+        .gte('created_at', startDate.toISOString());
+
+      if (error) {
+        throw new BadRequestException(`Lỗi khi lấy thống kê đơn hàng: ${error.message}`);
+      }
+
+      // Nhóm dữ liệu theo thời gian
+      const groupedData = {};
+      orders?.forEach(order => {
+        const date = new Date(order.created_at);
+        let key: string;
+
+        if (groupBy === 'day') {
+          key = date.toISOString().split('T')[0];
+        } else {
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        if (!groupedData[key]) {
+          groupedData[key] = {
+            date: key,
+            totalOrders: 0,
+            totalRevenue: 0,
+            completed: 0,
+            cancelled: 0,
+          };
+        }
+
+        groupedData[key].totalOrders++;
+        if (order.status === OrderStatus.DELIVERED) {
+          groupedData[key].totalRevenue += order.total_amount;
+          groupedData[key].completed++;
+        }
+        if (order.status === OrderStatus.CANCELLED) {
+          groupedData[key].cancelled++;
+        }
+      });
+
+      return Object.values(groupedData).sort((a: any, b: any) => a.date.localeCompare(b.date));
     } catch (error) {
       throw new BadRequestException(`Lỗi khi lấy thống kê đơn hàng: ${error.message}`);
     }

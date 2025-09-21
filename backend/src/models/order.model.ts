@@ -105,9 +105,17 @@ export interface OrderItemResponse {
   price: number;
 }
 
+export interface OrderUserResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+}
+
 export class OrderResponseDto implements Omit<Order, 'items'> {
   id: string;
   userId: string;
+  user?: OrderUserResponse; // Thông tin user được join từ bảng users
   status: OrderStatus;
   totalAmount: number;
   items: OrderItemResponse[];

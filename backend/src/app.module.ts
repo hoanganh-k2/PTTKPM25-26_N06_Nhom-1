@@ -7,6 +7,10 @@ import { BooksModule } from './books/books.module';
 import { InventoryModule } from './inventory/inventory.module'; 
 import { UsersModule } from './users/users.module';
 import { OrdersModule } from './orders/orders.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { CategoriesModule } from './categories/categories.module';
+import { AuthorsModule } from './authors/authors.module';
+import { PublishersModule } from './publishers/publishers.module';
 import { SeedCommand } from './data/seed.command';
 
 @Module({
@@ -19,6 +23,10 @@ import { SeedCommand } from './data/seed.command';
     InventoryModule,
     UsersModule,
     OrdersModule,
+    DashboardModule,
+    CategoriesModule,
+    AuthorsModule,
+    PublishersModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeedCommand],

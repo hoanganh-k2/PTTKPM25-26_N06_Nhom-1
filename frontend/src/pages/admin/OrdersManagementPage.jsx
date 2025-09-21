@@ -20,77 +20,45 @@ export default function OrdersManagementPage() {
     fetchOrders();
   }, [currentPage, selectedStatus]);
 
+  useEffect(() => {
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      if (searchQuery !== undefined) {
+        setCurrentPage(1);
+        fetchOrders();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // Giả lập dữ liệu
-      setTimeout(() => {
-        const mockOrders = [
-          {
-            id: 'ORD001',
-            orderDate: '2023-10-15',
-            customer: { id: '1', name: 'Nguyễn Văn A', email: 'nguyenvana@gmail.com', phone: '0912345678' },
-            total: 235000,
-            status: 'Đã giao hàng',
-            paymentMethod: 'COD',
-            items: [
-              { id: '1', title: 'Đắc Nhân Tâm', quantity: 1, price: 120000 },
-              { id: '3', title: 'Tôi Thấy Hoa Vàng Trên Cỏ Xanh', quantity: 1, price: 85000 },
-              { id: 'SHIP', title: 'Phí vận chuyển', quantity: 1, price: 30000 }
-            ],
-            shippingAddress: '123 Đường ABC, Quận 1, TP. Hồ Chí Minh',
-            notes: ''
-          },
-          {
-            id: 'ORD002',
-            orderDate: '2023-10-16',
-            customer: { id: '2', name: 'Trần Thị B', email: 'tranthib@gmail.com', phone: '0923456789' },
-            total: 108000,
-            status: 'Đang giao hàng',
-            paymentMethod: 'Chuyển khoản ngân hàng',
-            items: [
-              { id: '2', title: 'Nhà Giả Kim', quantity: 1, price: 90000 },
-              { id: 'SHIP', title: 'Phí vận chuyển', quantity: 1, price: 18000 }
-            ],
-            shippingAddress: '456 Đường XYZ, Quận 2, TP. Hồ Chí Minh',
-            notes: 'Giao hàng ngoài giờ hành chính'
-          },
-          {
-            id: 'ORD003',
-            orderDate: '2023-10-17',
-            customer: { id: '3', name: 'Lê Văn C', email: 'levanc@gmail.com', phone: '0934567890' },
-            total: 186000,
-            status: 'Chờ xác nhận',
-            paymentMethod: 'Ví điện tử MoMo',
-            items: [
-              { id: '4', title: 'Dế Mèn Phiêu Lưu Ký', quantity: 2, price: 156000 },
-              { id: 'SHIP', title: 'Phí vận chuyển', quantity: 1, price: 30000 }
-            ],
-            shippingAddress: '789 Đường KLM, Quận 3, TP. Hồ Chí Minh',
-            notes: ''
-          },
-          {
-            id: 'ORD004',
-            orderDate: '2023-10-18',
-            customer: { id: '4', name: 'Phạm Thị D', email: 'phamthid@gmail.com', phone: '0945678901' },
-            total: 138000,
-            status: 'Đã hủy',
-            paymentMethod: 'COD',
-            items: [
-              { id: '1', title: 'Đắc Nhân Tâm', quantity: 1, price: 120000 },
-              { id: 'SHIP', title: 'Phí vận chuyển', quantity: 1, price: 18000 }
-            ],
-            shippingAddress: '101 Đường PQR, Quận 4, TP. Hồ Chí Minh',
-            notes: 'Khách hàng yêu cầu hủy đơn hàng'
-          }
-        ];
-        
-        setOrders(mockOrders);
-        setTotalPages(3); // Giả lập có 3 trang
-        setLoading(false);
-      }, 500);
+      const params = {
+        page: currentPage,
+        limit: 10,
+        search: searchQuery
+      };
+      
+      if (selectedStatus) {
+        params.status = selectedStatus;
+      }
+      
+      const result = await orderService.getAllOrders(params);
+      
+      // Xử lý dữ liệu trả về từ API
+      setOrders(result.orders || result || []);
+      
+      // Tính tổng số trang từ total và limit
+      const totalPages = Math.ceil((result.total || 0) / 10);
+      setTotalPages(totalPages);
+      
+      setLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách đơn hàng:', error);
+      setOrders([]);
+      setTotalPages(1);
       setLoading(false);
     }
   };
@@ -218,23 +186,27 @@ export default function OrdersManagementPage() {
                   orders.map((order) => (
                     <tr key={order.id}>
                       <td className="font-medium">{order.id}</td>
-                      <td>{formatDate(order.orderDate)}</td>
+                      <td>{formatDate(order.createdAt || order.orderDate)}</td>
                       <td>
-                        <div>{order.customer.name}</div>
-                        <div className="text-sm text-text-tertiary">{order.customer.phone}</div>
+                        <div>{order.user?.fullName || order.customer?.name || 'N/A'}</div>
+                        <div className="text-sm text-text-tertiary">{order.user?.phone || order.customer?.phone || 'N/A'}</div>
                       </td>
                       <td style={{textAlign: 'right'}} className="font-medium">
-                        {formatCurrency(order.total)}
+                        {formatCurrency(order.totalAmount || order.total)}
                       </td>
-                      <td>{order.paymentMethod}</td>
+                      <td>{order.paymentMethod || 'N/A'}</td>
                       <td style={{textAlign: 'center'}}>
                         <span className={`status-indicator ${
-                          order.status === 'Chờ xác nhận' ? 'status-pending' : 
-                          order.status === 'Đang giao hàng' ? 'status-processing' : 
-                          order.status === 'Đã giao hàng' ? 'status-completed' : 
+                          order.status === 'pending' || order.status === 'Chờ xác nhận' ? 'status-pending' : 
+                          order.status === 'shipping' || order.status === 'Đang giao hàng' ? 'status-processing' : 
+                          order.status === 'delivered' || order.status === 'Đã giao hàng' ? 'status-completed' : 
                           'status-cancelled'
                         }`}>
-                          {order.status}
+                          {order.status === 'pending' ? 'Chờ xác nhận' :
+                           order.status === 'shipping' ? 'Đang giao hàng' :
+                           order.status === 'delivered' ? 'Đã giao hàng' :
+                           order.status === 'cancelled' ? 'Đã hủy' :
+                           order.status}
                         </span>
                       </td>
                       <td className="actions">

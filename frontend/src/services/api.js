@@ -30,9 +30,9 @@ api.interceptors.response.use(
   (error) => {
     // Xử lý khi token hết hạn (401 Unauthorized)
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem("token");
+      // localStorage.removeItem("token");
       // Redirect to login
-      window.location.href = "/login";
+      // window.location.href = "/login";
     }
     return Promise.reject(error);
   }

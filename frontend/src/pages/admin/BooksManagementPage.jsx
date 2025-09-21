@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Filter, BookOpen, RefreshCw, AlertCircle } from 'lucide-react';
 import bookService from '../../services/book.service';
+import categoryService from '../../services/category.service';
 import './AdminPages.css';
 
 export default function BooksManagementPage() {
@@ -21,72 +22,51 @@ export default function BooksManagementPage() {
     fetchCategories();
   }, [currentPage, selectedCategory]);
 
+  useEffect(() => {
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      if (searchQuery !== undefined) {
+        setCurrentPage(1);
+        fetchBooks();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
   const fetchBooks = async () => {
     setLoading(true);
     try {
-      // Trong môi trường thực tế, bạn sẽ gọi API từ bookService
-      // Ở đây chúng ta giả lập dữ liệu
-      setTimeout(() => {
-        const mockBooks = [
-          { 
-            id: '1', 
-            title: 'Đắc Nhân Tâm', 
-            author: { id: '1', name: 'Dale Carnegie' },
-            price: 120000,
-            stock: 50,
-            categories: [{ id: '1', name: 'Tự lực' }],
-            publishYear: 2016
-          },
-          { 
-            id: '2', 
-            title: 'Nhà Giả Kim', 
-            author: { id: '2', name: 'Paulo Coelho' },
-            price: 90000,
-            stock: 40,
-            categories: [{ id: '2', name: 'Tiểu thuyết' }],
-            publishYear: 2020
-          },
-          { 
-            id: '3', 
-            title: 'Tôi Thấy Hoa Vàng Trên Cỏ Xanh', 
-            author: { id: '3', name: 'Nguyễn Nhật Ánh' },
-            price: 85000,
-            stock: 35,
-            categories: [{ id: '2', name: 'Tiểu thuyết' }, { id: '3', name: 'Thiếu nhi' }],
-            publishYear: 2018
-          },
-          { 
-            id: '4', 
-            title: 'Dế Mèn Phiêu Lưu Ký', 
-            author: { id: '4', name: 'Tô Hoài' },
-            price: 78000,
-            stock: 60,
-            categories: [{ id: '3', name: 'Thiếu nhi' }],
-            publishYear: 2019
-          },
-        ];
-        setBooks(mockBooks);
-        setTotalPages(3); // Giả lập có 3 trang
-        setLoading(false);
-      }, 500);
+      const params = {
+        page: currentPage,
+        limit: 10, // 10 sách mỗi trang
+        search: searchQuery,
+        categoryId: selectedCategory
+      };
+      
+      const response = await bookService.getAllBooks(params);
+      setBooks(response.books || []);
+      
+      // Tính tổng số trang từ total và limit
+      const totalPages = Math.ceil((response.total || 0) / 10);
+      setTotalPages(totalPages);
+      
+      setLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách sách:', error);
+      setBooks([]);
+      setTotalPages(1);
       setLoading(false);
     }
   };
 
   const fetchCategories = async () => {
     try {
-      // Giả lập dữ liệu thể loại
-      const mockCategories = [
-        { id: '1', name: 'Tự lực' },
-        { id: '2', name: 'Tiểu thuyết' },
-        { id: '3', name: 'Thiếu nhi' },
-        { id: '4', name: 'Kinh tế' }
-      ];
-      setCategories(mockCategories);
+      const response = await categoryService.getAllCategories();
+      setCategories(response.categories || response || []);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách thể loại:', error);
+      setCategories([]);
     }
   };
 
@@ -110,15 +90,18 @@ export default function BooksManagementPage() {
     if (!bookToDelete) return;
     
     try {
-      // Gọi API xóa sách (giả lập)
-      console.log('Xóa sách:', bookToDelete);
+      await bookService.deleteBook(bookToDelete.id);
       
       // Cập nhật UI sau khi xóa
       setBooks(books.filter(book => book.id !== bookToDelete.id));
       setShowDeleteModal(false);
       setBookToDelete(null);
+      
+      // Refresh lại danh sách để cập nhật pagination
+      fetchBooks();
     } catch (error) {
       console.error('Lỗi khi xóa sách:', error);
+      alert('Có lỗi xảy ra khi xóa sách. Vui lòng thử lại.');
     }
   };
 
@@ -218,10 +201,10 @@ export default function BooksManagementPage() {
                       <td>
                         <div className="font-medium">{book.title}</div>
                       </td>
-                      <td>{book.author.name}</td>
+                      <td>{book.author?.name || 'Chưa có tác giả'}</td>
                       <td>
                         <div className="flex flex-wrap gap-1">
-                          {book.categories.map((category) => (
+                          {(book.categories || []).map((category) => (
                             <span 
                               key={category.id}
                               className="admin-badge admin-badge-blue"
@@ -229,6 +212,9 @@ export default function BooksManagementPage() {
                               {category.name}
                             </span>
                           ))}
+                          {(!book.categories || book.categories.length === 0) && (
+                            <span className="text-gray-500">Chưa phân loại</span>
+                          )}
                         </div>
                       </td>
                       <td style={{textAlign: 'right'}}>
@@ -241,7 +227,7 @@ export default function BooksManagementPage() {
                           {book.stock}
                         </span>
                       </td>
-                      <td>{book.publishYear}</td>
+                      <td>{book.publishYear || 'N/A'}</td>
                       <td>
                         <div className="admin-table-actions">
                           <button 

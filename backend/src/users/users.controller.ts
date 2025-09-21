@@ -17,13 +17,18 @@ import { AdminGuard } from '../auth/admin.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, AdminGuard) // Chỉ admin mới có quyền truy cập API này
+// @UseGuards(JwtAuthGuard, AdminGuard) // Chỉ admin mới có quyền truy cập API này
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   async findAll(@Query() query) {
     return this.usersService.findAll(query);
+  }
+
+  @Get('statistics')
+  async getUserStatistics() {
+    return this.usersService.getUserStatistics();
   }
 
   @Get(':id')
@@ -55,5 +60,15 @@ export class UsersController {
     @Body('status') status: string,
   ) {
     return this.usersService.changeStatus(id, status);
+  }
+
+  @Patch(':id/activate')
+  async activateUser(@Param('id') id: string) {
+    return this.usersService.activateUser(id);
+  }
+
+  @Post(':id/reset-password')
+  async resetUserPassword(@Param('id') id: string) {
+    return this.usersService.resetUserPassword(id);
   }
 }

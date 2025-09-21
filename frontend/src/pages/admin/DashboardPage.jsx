@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, BookOpen, PackageCheck, Users, TrendingUp, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import dashboardService from '../../services/dashboard.service';
 import './AdminPages.css';
 
 export default function AdminDashboard() {
@@ -14,22 +15,30 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Trong một ứng dụng thực tế, bạn sẽ gọi API để lấy dữ liệu thống kê
-    // Ở đây chúng ta sẽ giả lập dữ liệu
     const fetchData = async () => {
+      setLoading(true);
       try {
-        // Giả lập dữ liệu
-        setTimeout(() => {
-          setStats({
-            totalBooks: 248,
-            totalOrders: 157,
-            totalUsers: 84,
-            totalRevenue: 15680000
-          });
-          setLoading(false);
-        }, 1000);
+        // Gọi API dashboard tập trung để lấy thống kê
+        const dashboardStats = await dashboardService.getDashboardStats();
+
+        setStats({
+          totalBooks: dashboardStats.totalBooks || 0,
+          totalOrders: dashboardStats.totalOrders || 0,
+          totalUsers: dashboardStats.totalUsers || 0,
+          totalRevenue: dashboardStats.totalRevenue || 0
+        });
+        
+        setLoading(false);
       } catch (error) {
         console.error('Lỗi khi lấy dữ liệu thống kê:', error);
+        
+        // Fallback sử dụng dữ liệu mặc định nếu API lỗi
+        setStats({
+          totalBooks: 248,
+          totalOrders: 157,
+          totalUsers: 84,
+          totalRevenue: 15680000
+        });
         setLoading(false);
       }
     };

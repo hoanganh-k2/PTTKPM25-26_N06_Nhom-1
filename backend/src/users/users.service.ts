@@ -278,4 +278,100 @@ export class UsersService {
       );
     }
   }
+
+  // Lấy thống kê người dùng
+  async getUserStatistics() {
+    try {
+      const { data: users, error } = await this.supabase
+        .from('users')
+        .select('role, created_at');
+
+      if (error) {
+        throw new BadRequestException(`Lỗi khi lấy thống kê người dùng: ${error.message}`);
+      }
+
+      const totalUsers = users.length;
+      const adminCount = users.filter(user => user.role === 'admin').length;
+      const customerCount = users.filter(user => user.role === 'customer').length;
+      
+      // Thống kê theo tháng
+      const now = new Date();
+      const thisMonth = users.filter(user => {
+        const createdAt = new Date(user.created_at);
+        return createdAt.getMonth() === now.getMonth() && 
+               createdAt.getFullYear() === now.getFullYear();
+      }).length;
+
+      const lastMonth = users.filter(user => {
+        const createdAt = new Date(user.created_at);
+        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1);
+        return createdAt.getMonth() === lastMonthDate.getMonth() && 
+               createdAt.getFullYear() === lastMonthDate.getFullYear();
+      }).length;
+
+      const growth = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
+
+      return {
+        totalUsers,
+        adminCount,
+        customerCount,
+        newUsersThisMonth: thisMonth,
+        newUsersLastMonth: lastMonth,
+        growth: Math.round(growth * 100) / 100,
+      };
+    } catch (error) {
+      throw new BadRequestException(`Lỗi khi lấy thống kê người dùng: ${error.message}`);
+    }
+  }
+
+  // Kích hoạt người dùng
+  async activateUser(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.findById(id);
+
+      const { error } = await this.supabase
+        .from('users')
+        .update({ status: 'active' })
+        .eq('id', id);
+
+      if (error) {
+        throw new BadRequestException(`Lỗi khi kích hoạt người dùng: ${error.message}`);
+      }
+
+      return {
+        success: true,
+        message: 'Kích hoạt người dùng thành công',
+      };
+    } catch (error) {
+      throw new BadRequestException(`Lỗi khi kích hoạt người dùng: ${error.message}`);
+    }
+  }
+
+  // Đặt lại mật khẩu người dùng
+  async resetUserPassword(id: string): Promise<{ success: boolean; message: string; newPassword: string }> {
+    try {
+      await this.findById(id);
+
+      // Tạo mật khẩu mới ngẫu nhiên
+      const newPassword = Math.random().toString(36).slice(-8);
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      const { error } = await this.supabase
+        .from('users')
+        .update({ password: hashedPassword })
+        .eq('id', id);
+
+      if (error) {
+        throw new BadRequestException(`Lỗi khi đặt lại mật khẩu: ${error.message}`);
+      }
+
+      return {
+        success: true,
+        message: 'Đặt lại mật khẩu thành công',
+        newPassword,
+      };
+    } catch (error) {
+      throw new BadRequestException(`Lỗi khi đặt lại mật khẩu: ${error.message}`);
+    }
+  }
 }

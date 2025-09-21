@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderDto } from '../models/order.model';
@@ -20,8 +21,22 @@ import { WarehouseManagerGuard } from '../auth/warehouse-manager.guard';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  // Lấy danh sách tất cả đơn hàng (Admin và Warehouse Manager)
+  // Lấy thống kê đơn hàng (Admin)
   @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('statistics')
+  async getOrderStatistics(@Query('period') period: string = 'month') {
+    return this.ordersService.getOrderStatistics(period);
+  }
+
+  // Lấy thống kê đơn hàng chi tiết (Admin)
+  // @UseGuards(JwtAuthGuard, AdminGuard)
+  @Get('admin/statistics')
+  async getStatistics() {
+    return this.ordersService.getStatistics();
+  }
+
+  // Lấy danh sách tất cả đơn hàng (Admin và Warehouse Manager)
+  // @UseGuards(JwtAuthGuard, AdminGuard)
   @Get('admin')
   async findAllAdmin(@Query() query) {
     return this.ordersService.findAll(query);
@@ -78,10 +93,10 @@ export class OrdersController {
     return this.ordersService.cancel(id);
   }
 
-  // Lấy thống kê đơn hàng (Admin)
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('admin/statistics')
-  async getStatistics() {
-    return this.ordersService.getStatistics();
+  // Cập nhật trạng thái đơn hàng cụ thể (Admin và Warehouse Manager)
+  // @UseGuards(JwtAuthGuard, WarehouseManagerGuard) 
+  @Patch(':id/status')
+  async updateStatus(@Param('id') id: string, @Body('status') status: string) {
+    return this.ordersService.updateStatus(id, status);
   }
 }

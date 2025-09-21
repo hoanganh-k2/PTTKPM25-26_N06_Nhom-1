@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, UserPlus, Edit, UserX, ChevronLeft, ChevronRight, Mail, Users } from 'lucide-react';
+import userService from '../../services/user.service';
 import './AdminPages.css';
 
 export default function UsersManagementPage() {
@@ -32,26 +33,30 @@ export default function UsersManagementPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Gọi API thực từ service
-      import('../../services/user.service').then(async (module) => {
-        const { userService } = module;
-        const result = await userService.getAllUsers({
-          page: currentPage,
-          limit: 10,
-          role: selectedRole,
-          search: searchQuery
-        });
-        
-        // Xử lý dữ liệu trả về từ API
-        setUsers(result.users || []);
-        setTotalPages(result.totalPages || 1);
-        setLoading(false);
-      }).catch(error => {
-        console.error('Lỗi khi import user service:', error);
-        setLoading(false);
-      });
+      const params = {
+        page: currentPage,
+        limit: 10,
+        search: searchQuery
+      };
+      
+      if (selectedRole) {
+        params.role = selectedRole;
+      }
+      
+      const result = await userService.getAllUsers(params);
+      
+      // Xử lý dữ liệu trả về từ API
+      setUsers(result.users || result || []);
+      
+      // Tính tổng số trang từ total và limit
+      const totalPages = Math.ceil((result.total || 0) / 10);
+      setTotalPages(totalPages);
+      
+      setLoading(false);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách người dùng:', error);
+      setUsers([]);
+      setTotalPages(1);
       setLoading(false);
     }
   };
@@ -104,15 +109,18 @@ export default function UsersManagementPage() {
     if (!userToDelete) return;
     
     try {
-      // Gọi API xóa người dùng (giả lập)
-      console.log('Xóa người dùng:', userToDelete);
+      await userService.deleteUser(userToDelete.id);
       
       // Cập nhật UI sau khi xóa
       setUsers(users.filter(user => user.id !== userToDelete.id));
       setShowDeleteModal(false);
       setUserToDelete(null);
+      
+      // Refresh lại danh sách để cập nhật pagination
+      fetchUsers();
     } catch (error) {
       console.error('Lỗi khi xóa người dùng:', error);
+      alert('Có lỗi xảy ra khi xóa người dùng. Vui lòng thử lại.');
     }
   };
 
@@ -178,36 +186,49 @@ export default function UsersManagementPage() {
     
     try {
       if (editingUser) {
-        // Gọi API cập nhật người dùng (giả lập)
-        console.log('Cập nhật người dùng:', { ...formData, id: editingUser.id });
+        // Chuẩn bị dữ liệu cập nhật (không bao gồm password nếu trống)
+        const updateData = {
+          fullName: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role
+        };
         
-        // Cập nhật UI
-        setUsers(users.map(user => 
-          user.id === editingUser.id 
-            ? { ...user, name: formData.name, email: formData.email, phone: formData.phone, role: formData.role }
-            : user
-        ));
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
+        
+        await userService.updateUser(editingUser.id, updateData);
+        alert('Cập nhật người dùng thành công!');
       } else {
-        // Gọi API thêm người dùng mới (giả lập)
-        console.log('Thêm người dùng mới:', formData);
-        
-        // Cập nhật UI với dữ liệu giả lập
-        const newUser = {
-          id: (Math.max(...users.map(u => parseInt(u.id))) + 1).toString(),
-          name: formData.name,
+        // Tạo người dùng mới
+        const newUserData = {
+          fullName: formData.name,
           email: formData.email,
           phone: formData.phone,
           role: formData.role,
-          registeredDate: new Date().toISOString().split('T')[0],
-          status: 'active'
+          password: formData.password
         };
         
-        setUsers([...users, newUser]);
+        await userService.createUser(newUserData);
+        alert('Thêm người dùng mới thành công!');
       }
       
+      // Refresh lại danh sách và đóng form
+      fetchUsers();
       setShowUserForm(false);
+      setEditingUser(null);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        role: 'customer',
+        password: '',
+        confirmPassword: ''
+      });
     } catch (error) {
       console.error('Lỗi khi lưu người dùng:', error);
+      alert(`Có lỗi xảy ra: ${error.message || 'Vui lòng thử lại'}`);
     }
   };
 
@@ -303,26 +324,29 @@ export default function UsersManagementPage() {
                       users.map((user) => (
                         <tr key={user.id}>
                           <td>{user.id}</td>
-                          <td className="font-medium">{user.name}</td>
+                          <td className="font-medium">{user.fullName || user.full_name || user.name}</td>
                           <td>{user.email}</td>
-                          <td>{user.phone}</td>
+                          <td>{user.phone || 'N/A'}</td>
                           <td className="text-center">
                             <span className={`admin-badge ${
                               user.role === 'admin' 
                                 ? 'admin-badge-purple' 
+                                : user.role === 'warehouse_manager'
+                                ? 'admin-badge-orange'
                                 : 'admin-badge-blue'
                             }`}>
-                              {user.role === 'admin' ? 'Admin' : 'Khách hàng'}
+                              {user.role === 'admin' ? 'Admin' : 
+                               user.role === 'warehouse_manager' ? 'Quản lý kho' : 'Khách hàng'}
                             </span>
                           </td>
-                          <td>{formatDate(user.registeredDate)}</td>
+                          <td>{user.createdAt ? formatDate(user.createdAt) : formatDate(user.registeredDate || new Date())}</td>
                           <td className="text-center">
                             <span className={`admin-badge ${
-                              user.status === 'active' 
+                              (user.status || 'active') === 'active' 
                                 ? 'admin-badge-green' 
                                 : 'admin-badge-red'
                             }`}>
-                              {user.status === 'active' ? 'Đang hoạt động' : 'Đã vô hiệu hóa'}
+                              {(user.status || 'active') === 'active' ? 'Đang hoạt động' : 'Đã vô hiệu hóa'}
                             </span>
                           </td>
                           <td>
