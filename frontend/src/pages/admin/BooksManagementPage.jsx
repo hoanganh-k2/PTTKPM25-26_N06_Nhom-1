@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Filter, BookOpen, RefreshCw, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Filter, BookOpen, RefreshCw, AlertCircle, Save } from 'lucide-react';
 import bookService from '../../services/book.service';
 import categoryService from '../../services/category.service';
+import authorService from '../../services/author.service';
+import publisherService from '../../services/publisher.service';
+import { FormModal, ConfirmModal } from '../../components/ui/modal';
 import './AdminPages.css';
 
 export default function BooksManagementPage() {
@@ -14,13 +17,41 @@ export default function BooksManagementPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
+  const [authors, setAuthors] = useState([]);
+  const [publishers, setPublishers] = useState([]);
+  
+  // Modal states
+  const [showBookModal, setShowBookModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingBook, setEditingBook] = useState(null);
   const [bookToDelete, setBookToDelete] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    authorId: '',
+    publisherId: '',
+    categories: [],
+    description: '',
+    price: '',
+    stock: '',
+    publishYear: '',
+    pages: '',
+    isbn: ''
+  });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     fetchBooks();
-    fetchCategories();
   }, [currentPage, selectedCategory]);
+
+  useEffect(() => {
+    // Load reference data only once
+    fetchCategories();
+    fetchAuthors();
+    fetchPublishers();
+  }, []);
 
   useEffect(() => {
     // Debounce search
@@ -70,13 +101,142 @@ export default function BooksManagementPage() {
     }
   };
 
+  const fetchAuthors = async () => {
+    try {
+      const response = await authorService.getAllAuthors();
+      setAuthors(response.authors || response || []);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách tác giả:', error);
+      setAuthors([]);
+    }
+  };
+
+  const fetchPublishers = async () => {
+    try {
+      const response = await publisherService.getAllPublishers();
+      setPublishers(response.publishers || response || []);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách nhà xuất bản:', error);
+      setPublishers([]);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      authorId: '',
+      publisherId: '',
+      categories: [],
+      description: '',
+      price: '',
+      stock: '',
+      publishYear: '',
+      pages: '',
+      isbn: ''
+    });
+    setErrors({});
+  };
+
+  const openAddModal = () => {
+    resetForm();
+    setEditingBook(null);
+    setShowBookModal(true);
+  };
+
+  const openEditModal = (book) => {
+    setFormData({
+      title: book.title || '',
+      authorId: book.authorId || '',
+      publisherId: book.publisherId || '',
+      categories: book.categoryIds || [],
+      description: book.description || '',
+      price: book.price || '',
+      stock: book.stock || '',
+      publishYear: book.publishYear || '',
+      pages: book.pageCount || '',
+      isbn: book.ISBN || ''
+    });
+    setEditingBook(book);
+    setErrors({});
+    setShowBookModal(true);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleCategoryChange = (e) => {
+    const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
+    setFormData(prev => ({ ...prev, categories: selectedValues }));
+    if (errors.categories) {
+      setErrors(prev => ({ ...prev, categories: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.title.trim()) newErrors.title = 'Tên sách là bắt buộc';
+    if (!formData.authorId) newErrors.authorId = 'Tác giả là bắt buộc';
+    if (!formData.publisherId) newErrors.publisherId = 'Nhà xuất bản là bắt buộc';
+    if (formData.categories.length === 0) newErrors.categories = 'Ít nhất một thể loại là bắt buộc';
+    if (!formData.price || formData.price <= 0) newErrors.price = 'Giá bán phải lớn hơn 0';
+    if (!formData.stock || formData.stock < 0) newErrors.stock = 'Số lượng không được âm';
+    if (!formData.publishYear || formData.publishYear < 1000 || formData.publishYear > new Date().getFullYear()) {
+      newErrors.publishYear = 'Năm xuất bản không hợp lệ';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
+    setSubmitting(true);
+    try {
+      const apiData = {
+        title: formData.title.trim(),
+        authorId: formData.authorId,
+        publisherId: formData.publisherId,
+        categoryIds: formData.categories,
+        description: formData.description.trim(),
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock),
+        publishYear: parseInt(formData.publishYear),
+        pageCount: formData.pages ? parseInt(formData.pages) : undefined,
+        ISBN: formData.isbn.trim() || undefined
+      };
+      
+      console.log('Submitting book data:', apiData);
+      
+      if (editingBook) {
+        await bookService.updateBook(editingBook.id, apiData);
+      } else {
+        await bookService.createBook(apiData);
+      }
+      
+      setShowBookModal(false);
+      fetchBooks();
+      setSubmitting(false);
+    } catch (error) {
+      console.error('Lỗi khi lưu sách:', error);
+      alert(`Có lỗi xảy ra: ${error.message || 'Vui lòng thử lại'}`);
+      setSubmitting(false);
+    }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     setCurrentPage(1);
     fetchBooks();
   };
 
-  const handleCategoryChange = (e) => {
+  const handleFilterCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
     setCurrentPage(1);
   };
@@ -101,7 +261,36 @@ export default function BooksManagementPage() {
       fetchBooks();
     } catch (error) {
       console.error('Lỗi khi xóa sách:', error);
-      alert('Có lỗi xảy ra khi xóa sách. Vui lòng thử lại.');
+      console.log('Error object:', JSON.stringify(error, null, 2));
+      console.log('Error message:', error.message);
+      
+      // Kiểm tra nếu là lỗi foreign key constraint
+      const errorMsg = error.message || error.error || (typeof error === 'string' ? error : 'Lỗi không xác định');
+      console.log('Final error message:', errorMsg);
+      
+      if (errorMsg.includes('đơn hàng') || errorMsg.includes('stock = 0') || errorMsg.includes('foreign key')) {
+        // Hiển thị dialog hỏi có muốn ẩn sách không
+        const userConfirm = window.confirm(
+          `${errorMsg}\n\nBạn có muốn ẩn sách này thay vì xóa không? (sẽ set stock = 0)`
+        );
+        
+        if (userConfirm) {
+          try {
+            await bookService.hideBook(bookToDelete.id);
+            alert('Đã ẩn sách thành công!');
+            
+            // Refresh lại danh sách
+            fetchBooks();
+            setShowDeleteModal(false);
+            setBookToDelete(null);
+          } catch (hideError) {
+            console.error('Lỗi khi ẩn sách:', hideError);
+            alert('Có lỗi xảy ra khi ẩn sách. Vui lòng thử lại.');
+          }
+        }
+      } else {
+        alert(errorMsg);
+      }
     }
   };
 
@@ -123,7 +312,7 @@ export default function BooksManagementPage() {
             {/* <p className="text-sm text-text-secondary">Quản lý kho sách của hiệu sách</p> */}
           </div>
         </div>
-        <button className="admin-btn admin-btn-primary" onClick={() => navigate('/admin/books/add')}>
+        <button className="admin-btn admin-btn-primary" onClick={openAddModal}>
           <Plus className="h-4 w-4 mr-1" /> Thêm sách mới
         </button>
       </div>
@@ -145,7 +334,7 @@ export default function BooksManagementPage() {
             <div className="admin-filters">
               <select
                 value={selectedCategory}
-                onChange={handleCategoryChange}
+                onChange={handleFilterCategoryChange}
                 className="admin-form-select"
               >
                 <option value="">Tất cả thể loại</option>
@@ -232,7 +421,7 @@ export default function BooksManagementPage() {
                         <div className="admin-table-actions">
                           <button 
                             className="admin-btn-icon" 
-                            onClick={() => navigate(`/admin/books/edit/${book.id}`)}
+                            onClick={() => openEditModal(book)}
                             title="Chỉnh sửa"
                           >
                             <Edit className="h-4 w-4" />
@@ -287,43 +476,215 @@ export default function BooksManagementPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="admin-modal-overlay">
-          <div className="admin-modal">
-            <div className="admin-modal-header">
-              <h3>Xác nhận xóa sách</h3>
+      {/* Book Form Modal */}
+      <FormModal
+        isOpen={showBookModal}
+        onClose={() => setShowBookModal(false)}
+        title={editingBook ? 'Chỉnh sửa sách' : 'Thêm sách mới'}
+        onSubmit={handleSubmit}
+        isSubmitting={submitting}
+        size="large"
+        submitText={editingBook ? 'Cập nhật' : 'Thêm'}
+      >
+        <div className="form-group">
+          <label htmlFor="title" className="form-label">
+            Tên sách <span className="text-danger">*</span>
+          </label>
+          <input
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            className={`form-control ${errors.title ? 'is-invalid' : ''}`}
+            placeholder="Nhập tên sách"
+          />
+          {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+        </div>
+
+        <div className="row">
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="authorId" className="form-label">
+                Tác giả <span className="text-danger">*</span>
+              </label>
+              <select
+                id="authorId"
+                name="authorId"
+                value={formData.authorId}
+                onChange={handleChange}
+                className={`form-select ${errors.authorId ? 'is-invalid' : ''}`}
+              >
+                <option value="">-- Chọn tác giả --</option>
+                {authors.map((author) => (
+                  <option key={author.id} value={author.id}>
+                    {author.name}
+                  </option>
+                ))}
+              </select>
+              {errors.authorId && <div className="invalid-feedback">{errors.authorId}</div>}
             </div>
-            <div className="admin-modal-content">
-              <div className="admin-alert admin-alert-danger">
-                <AlertCircle className="h-5 w-5" />
-                <div>
-                  <p>
-                    Bạn có chắc chắn muốn xóa sách "<span className="font-medium">{bookToDelete?.title}</span>"?
-                  </p>
-                  <p className="mt-2">
-                    Hành động này không thể hoàn tác.
-                  </p>
-                </div>
-              </div>
-              <div className="admin-form-actions mt-6">
-                <button
-                  className="admin-btn admin-btn-outline"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="admin-btn admin-btn-danger"
-                >
-                  Xóa
-                </button>
-              </div>
+          </div>
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="publisherId" className="form-label">
+                Nhà xuất bản <span className="text-danger">*</span>
+              </label>
+              <select
+                id="publisherId"
+                name="publisherId"
+                value={formData.publisherId}
+                onChange={handleChange}
+                className={`form-select ${errors.publisherId ? 'is-invalid' : ''}`}
+              >
+                <option value="">-- Chọn nhà xuất bản --</option>
+                {publishers.map((publisher) => (
+                  <option key={publisher.id} value={publisher.id}>
+                    {publisher.name}
+                  </option>
+                ))}
+              </select>
+              {errors.publisherId && <div className="invalid-feedback">{errors.publisherId}</div>}
             </div>
           </div>
         </div>
-      )}
+
+        <div className="form-group">
+          <label htmlFor="categories" className="form-label">
+            Thể loại <span className="text-danger">*</span>
+          </label>
+          <select
+            id="categories"
+            name="categories"
+            multiple
+            value={formData.categories}
+            onChange={handleCategoryChange}
+            className={`form-select ${errors.categories ? 'is-invalid' : ''}`}
+            style={{ height: '120px' }}
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          <small className="form-text text-muted">Giữ Ctrl để chọn nhiều thể loại</small>
+          {errors.categories && <div className="invalid-feedback">{errors.categories}</div>}
+        </div>
+
+        <div className="row">
+          <div className="col-md-4">
+            <div className="form-group">
+              <label htmlFor="price" className="form-label">
+                Giá bán (VNĐ) <span className="text-danger">*</span>
+              </label>
+              <input
+                id="price"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleChange}
+                className={`form-control ${errors.price ? 'is-invalid' : ''}`}
+                placeholder="0"
+              />
+              {errors.price && <div className="invalid-feedback">{errors.price}</div>}
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="form-group">
+              <label htmlFor="stock" className="form-label">
+                Số lượng <span className="text-danger">*</span>
+              </label>
+              <input
+                id="stock"
+                name="stock"
+                type="number"
+                value={formData.stock}
+                onChange={handleChange}
+                className={`form-control ${errors.stock ? 'is-invalid' : ''}`}
+                placeholder="0"
+              />
+              {errors.stock && <div className="invalid-feedback">{errors.stock}</div>}
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="form-group">
+              <label htmlFor="publishYear" className="form-label">
+                Năm xuất bản <span className="text-danger">*</span>
+              </label>
+              <input
+                id="publishYear"
+                name="publishYear"
+                type="number"
+                value={formData.publishYear}
+                onChange={handleChange}
+                className={`form-control ${errors.publishYear ? 'is-invalid' : ''}`}
+                placeholder={new Date().getFullYear()}
+              />
+              {errors.publishYear && <div className="invalid-feedback">{errors.publishYear}</div>}
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="pages" className="form-label">
+                Số trang
+              </label>
+              <input
+                id="pages"
+                name="pages"
+                type="number"
+                value={formData.pages}
+                onChange={handleChange}
+                className="form-control"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="isbn" className="form-label">
+                ISBN
+              </label>
+              <input
+                id="isbn"
+                name="isbn"
+                value={formData.isbn}
+                onChange={handleChange}
+                className="form-control"
+                placeholder="Nhập mã ISBN"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="description" className="form-label">
+            Mô tả
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            value={formData.description}
+            onChange={handleChange}
+            className="form-control"
+            placeholder="Nhập mô tả sách"
+          ></textarea>
+        </div>
+      </FormModal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa sách"
+        message={`Bạn có chắc chắn muốn xóa sách "${bookToDelete?.title}"? Hành động này không thể hoàn tác.`}
+        confirmText="Xóa"
+        variant="danger"
+      />
     </div>
   );
 }

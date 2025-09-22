@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Search, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Search, AlertCircle, RefreshCw, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { FormModal } from '../../components/ui/modal';
 import inventoryService from '../../services/inventory.service';
 import './AdminPages.css';
 
@@ -15,6 +16,12 @@ export default function InventoryManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [lowStockFilter, setLowStockFilter] = useState(10); // Mặc định hiển thị các sản phẩm có tồn kho dưới 10
+  
+  // Modal states
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [newStock, setNewStock] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchInventory();
@@ -38,14 +45,29 @@ export default function InventoryManagementPage() {
     }
   };
 
-  const handleUpdateStock = async (bookId, newStock) => {
+  const handleUpdateStock = async () => {
+    if (!selectedBook || !newStock || newStock < 0) return;
+    
+    setSubmitting(true);
     try {
-      await inventoryService.updateStock(bookId, newStock);
+      await inventoryService.updateStock(selectedBook.id, parseInt(newStock));
       // Refresh inventory after update
-      fetchInventory();
+      await fetchInventory();
+      setShowStockModal(false);
+      setSelectedBook(null);
+      setNewStock('');
+      setSubmitting(false);
     } catch (error) {
       console.error("Error updating stock:", error);
+      alert('Có lỗi xảy ra khi cập nhật tồn kho');
+      setSubmitting(false);
     }
+  };
+
+  const openStockModal = (book) => {
+    setSelectedBook(book);
+    setNewStock(book.stock.toString());
+    setShowStockModal(true);
   };
 
   const filteredInventory = searchQuery 
@@ -137,23 +159,13 @@ export default function InventoryManagementPage() {
                     </span>
                   </div>
 
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      min="0" 
-                      defaultValue={book.stock}
-                      id={`stock-${book.id}`}
-                      className="admin-form-input"
-                      style={{width: '80px'}}
-                    />
+                  <div className="flex justify-end">
                     <button 
-                      onClick={() => {
-                        const newStock = parseInt(document.getElementById(`stock-${book.id}`).value);
-                        handleUpdateStock(book.id, newStock);
-                      }}
-                      className="admin-filter-btn"
+                      onClick={() => openStockModal(book)}
+                      className="admin-btn-icon"
+                      title="Cập nhật tồn kho"
                     >
-                      Cập nhật
+                      <Edit className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -195,6 +207,56 @@ export default function InventoryManagementPage() {
       )}
         </div>
       </div>
+
+      {/* Stock Update Modal */}
+      <FormModal
+        isOpen={showStockModal}
+        onClose={() => setShowStockModal(false)}
+        title={`Cập nhật tồn kho - ${selectedBook?.title}`}
+        onSubmit={handleUpdateStock}
+        isSubmitting={submitting}
+        size="small"
+        submitText="Cập nhật"
+      >
+        <div className="form-group">
+          <label htmlFor="currentStock" className="form-label">
+            Tồn kho hiện tại
+          </label>
+          <input
+            id="currentStock"
+            type="number"
+            value={selectedBook?.stock || 0}
+            disabled
+            className="form-control"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="newStock" className="form-label">
+            Tồn kho mới <span className="text-danger">*</span>
+          </label>
+          <input
+            id="newStock"
+            type="number"
+            min="0"
+            value={newStock}
+            onChange={(e) => setNewStock(e.target.value)}
+            className="form-control"
+            placeholder="Nhập số lượng tồn kho mới"
+            autoFocus
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Thay đổi</label>
+          <div className="d-flex align-items-center">
+            <span className={`badge ${(parseInt(newStock) || 0) - (selectedBook?.stock || 0) >= 0 ? 'bg-success' : 'bg-danger'}`}>
+              {(parseInt(newStock) || 0) - (selectedBook?.stock || 0) >= 0 ? '+' : ''}
+              {(parseInt(newStock) || 0) - (selectedBook?.stock || 0)}
+            </span>
+          </div>
+        </div>
+      </FormModal>
     </div>
   );
 }

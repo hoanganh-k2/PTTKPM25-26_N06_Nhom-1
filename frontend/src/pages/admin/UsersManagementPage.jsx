@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, UserPlus, Edit, UserX, ChevronLeft, ChevronRight, Mail, Users } from 'lucide-react';
+import { Search, Filter, UserPlus, Edit, UserX, ChevronLeft, ChevronRight, Mail, Users, UserCheck } from 'lucide-react';
 import userService from '../../services/user.service';
+import { FormModal, ConfirmModal } from '../../components/ui/modal';
 import './AdminPages.css';
 
 export default function UsersManagementPage() {
@@ -10,10 +11,12 @@ export default function UsersManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedRole, setSelectedRole] = useState('');
-  const [showUserForm, setShowUserForm] = useState(false);
+  // Modal states
+  const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -72,7 +75,7 @@ export default function UsersManagementPage() {
     setCurrentPage(1);
   };
 
-  const openAddUserForm = () => {
+  const openAddUserModal = () => {
     setFormData({
       name: '',
       email: '',
@@ -83,21 +86,21 @@ export default function UsersManagementPage() {
     });
     setEditingUser(null);
     setErrors({});
-    setShowUserForm(true);
+    setShowUserModal(true);
   };
 
-  const openEditUserForm = (user) => {
+  const openEditUserModal = (user) => {
     setFormData({
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
+      name: user.fullName || user.full_name || user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      role: user.role || 'customer',
       password: '',
       confirmPassword: ''
     });
     setEditingUser(user);
     setErrors({});
-    setShowUserForm(true);
+    setShowUserModal(true);
   };
 
   const handleDeleteClick = (user) => {
@@ -105,22 +108,54 @@ export default function UsersManagementPage() {
     setShowDeleteModal(true);
   };
 
+  const handleActivateUser = async (user) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn kích hoạt lại tài khoản người dùng "${user.fullName || user.full_name || user.name}"?`)) {
+      return;
+    }
+
+    try {
+      await userService.activateUser(user.id);
+      
+      // Cập nhật UI
+      setUsers(users.map(u => 
+        u.id === user.id 
+          ? { ...u, status: 'active' } 
+          : u
+      ));
+      
+      alert('Đã kích hoạt tài khoản người dùng thành công!');
+      
+      // Refresh lại danh sách
+      fetchUsers();
+    } catch (error) {
+      console.error('Lỗi khi kích hoạt người dùng:', error);
+      alert(error.message || 'Có lỗi xảy ra khi kích hoạt người dùng. Vui lòng thử lại.');
+    }
+  };
+
   const confirmDelete = async () => {
     if (!userToDelete) return;
     
     try {
-      await userService.deleteUser(userToDelete.id);
+      // Sử dụng deactivateUser thay vì deleteUser
+      await userService.deactivateUser(userToDelete.id);
       
-      // Cập nhật UI sau khi xóa
-      setUsers(users.filter(user => user.id !== userToDelete.id));
+      // Cập nhật UI sau khi vô hiệu hóa
+      setUsers(users.map(user => 
+        user.id === userToDelete.id 
+          ? { ...user, status: 'inactive' } 
+          : user
+      ));
       setShowDeleteModal(false);
       setUserToDelete(null);
       
-      // Refresh lại danh sách để cập nhật pagination
+      alert('Đã vô hiệu hóa tài khoản người dùng thành công!');
+      
+      // Refresh lại danh sách để cập nhật từ server
       fetchUsers();
     } catch (error) {
-      console.error('Lỗi khi xóa người dùng:', error);
-      alert('Có lỗi xảy ra khi xóa người dùng. Vui lòng thử lại.');
+      console.error('Lỗi khi vô hiệu hóa người dùng:', error);
+      alert(error.message || 'Có lỗi xảy ra khi vô hiệu hóa người dùng. Vui lòng thử lại.');
     }
   };
 
@@ -151,72 +186,86 @@ export default function UsersManagementPage() {
       newErrors.email = 'Email không hợp lệ';
     }
     
-    if (!formData.phone) {
-      newErrors.phone = 'Vui lòng nhập số điện thoại';
-    } else if (!/^[0-9]{10,11}$/.test(formData.phone)) {
+    // Số điện thoại không bắt buộc, chỉ validate nếu có nhập
+    if (formData.phone && !/^[0-9]{10,11}$/.test(formData.phone)) {
       newErrors.phone = 'Số điện thoại phải có 10-11 chữ số';
     }
     
-    if (!editingUser) {
-      if (!formData.password) {
-        newErrors.password = 'Vui lòng nhập mật khẩu';
-      } else if (formData.password.length < 6) {
+    // Validation mật khẩu - chỉ validate nếu có nhập
+    if (formData.password && formData.password.trim()) {
+      if (formData.password.length < 6) {
         newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
       }
       
-      if (formData.password !== formData.confirmPassword) {
+      // Chỉ kiểm tra confirm password nếu đã nhập password
+      if (formData.confirmPassword !== formData.password) {
         newErrors.confirmPassword = 'Mật khẩu không khớp';
       }
-    } else if (formData.password && formData.password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
-    } else if (formData.password && formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu không khớp';
+    } else if (formData.confirmPassword && formData.confirmPassword.trim()) {
+      // Nếu password trống nhưng confirmPassword có giá trị
+      newErrors.confirmPassword = 'Vui lòng nhập mật khẩu trước';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
     
+    setSubmitting(true);
     try {
       if (editingUser) {
-        // Chuẩn bị dữ liệu cập nhật (không bao gồm password nếu trống)
+        // Chuẩn bị dữ liệu cập nhật
         const updateData = {
-          fullName: formData.name,
-          email: formData.email,
-          phone: formData.phone,
+          fullName: formData.name.trim(),
+          email: formData.email.trim(),
           role: formData.role
         };
         
-        if (formData.password) {
-          updateData.password = formData.password;
+        // Chỉ thêm phone nếu có nhập
+        if (formData.phone && formData.phone.trim()) {
+          updateData.phone = formData.phone.trim();
         }
         
+        // Chỉ thêm mật khẩu nếu người dùng có nhập và không rỗng
+        if (formData.password && formData.password.trim() && formData.password.length > 0) {
+          updateData.password = formData.password.trim();
+        }
+        
+        console.log('Update data being sent:', updateData); // Debug log
+        
         await userService.updateUser(editingUser.id, updateData);
-        alert('Cập nhật người dùng thành công!');
+        alert('Cập nhật thông tin người dùng thành công!');
       } else {
         // Tạo người dùng mới
         const newUserData = {
-          fullName: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-          password: formData.password
+          fullName: formData.name.trim(),
+          email: formData.email.trim(),
+          role: formData.role
         };
+        
+        // Chỉ thêm phone nếu có nhập
+        if (formData.phone && formData.phone.trim()) {
+          newUserData.phone = formData.phone.trim();
+        }
+        
+        // Chỉ thêm password nếu có nhập và không rỗng
+        if (formData.password && formData.password.trim() && formData.password.length > 0) {
+          newUserData.password = formData.password.trim();
+        }
+        
+        console.log('Create data being sent:', newUserData); // Debug log
         
         await userService.createUser(newUserData);
         alert('Thêm người dùng mới thành công!');
       }
       
       // Refresh lại danh sách và đóng form
-      fetchUsers();
-      setShowUserForm(false);
+      await fetchUsers();
+      setShowUserModal(false);
       setEditingUser(null);
       setFormData({
         name: '',
@@ -226,9 +275,12 @@ export default function UsersManagementPage() {
         password: '',
         confirmPassword: ''
       });
+      setErrors({});
     } catch (error) {
       console.error('Lỗi khi lưu người dùng:', error);
       alert(`Có lỗi xảy ra: ${error.message || 'Vui lòng thử lại'}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -248,7 +300,7 @@ export default function UsersManagementPage() {
           </div>
         </div>
         <button 
-          onClick={openAddUserForm}
+          onClick={openAddUserModal}
           className="admin-btn admin-btn-primary"
         >
           <UserPlus className="h-4 w-4" /> Thêm người dùng
@@ -353,17 +405,30 @@ export default function UsersManagementPage() {
                             <div className="admin-table-actions">
                               <button 
                                 className="admin-btn-icon"
-                                onClick={() => openEditUserForm(user)}
+                                onClick={() => openEditUserModal(user)}
+                                title="Chỉnh sửa"
                               >
                                 <Edit className="h-4 w-4" />
                               </button>
-                              <button 
-                                className="admin-btn-icon admin-btn-danger"
-                                onClick={() => handleDeleteClick(user)}
-                                disabled={user.role === 'admin'} // Không cho phép xóa admin
-                              >
-                                <UserX className="h-4 w-4" />
-                              </button>
+                              
+                              {(user.status || 'active') === 'active' ? (
+                                <button 
+                                  className="admin-btn-icon admin-btn-danger"
+                                  onClick={() => handleDeleteClick(user)}
+                                  disabled={user.role === 'admin'} // Không cho phép vô hiệu hóa admin
+                                  title={user.role === 'admin' ? 'Không thể vô hiệu hóa admin' : 'Vô hiệu hóa tài khoản'}
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </button>
+                              ) : (
+                                <button 
+                                  className="admin-btn-icon admin-btn-success"
+                                  onClick={() => handleActivateUser(user)}
+                                  title="Kích hoạt lại tài khoản"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -456,172 +521,137 @@ export default function UsersManagementPage() {
       </div>
 
       {/* User Form Modal */}
-      {showUserForm && (
-        <div className="admin-modal-overlay">
-          <div className="admin-modal">
-            <div className="admin-modal-header">
-              <h3>
-                {editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
-              </h3>
+      <FormModal
+        isOpen={showUserModal}
+        onClose={() => setShowUserModal(false)}
+        title={editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
+        onSubmit={handleSubmit}
+        isSubmitting={submitting}
+        size="medium"
+        submitText={editingUser ? 'Cập nhật' : 'Thêm'}
+      >
+        <div className="form-group">
+          <label htmlFor="name" className="form-label">
+            Tên người dùng <span className="text-danger">*</span>
+          </label>
+          <input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleFormChange}
+            className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+            placeholder="Nhập tên người dùng"
+          />
+          {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+        </div>
+
+        <div className="row">
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                Email <span className="text-danger">*</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleFormChange}
+                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                placeholder="Nhập email"
+              />
+              {errors.email && <div className="invalid-feedback">{errors.email}</div>}
             </div>
-            
-            <form onSubmit={handleSubmit} className="admin-form">
-              <div className="admin-form-group">
-                <label htmlFor="name" className="admin-form-label">
-                  Tên người dùng <span className="text-error">*</span>
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleFormChange}
-                  className={`admin-form-input ${errors.name ? 'admin-form-input-error' : ''}`}
-                />
-                {errors.name && (
-                  <p className="admin-form-error">{errors.name}</p>
-                )}
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="email" className="admin-form-label">
-                  Email <span className="text-error">*</span>
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleFormChange}
-                  className={`admin-form-input ${errors.email ? 'admin-form-input-error' : ''}`}
-                />
-                {errors.email && (
-                  <p className="admin-form-error">{errors.email}</p>
-                )}
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="phone" className="admin-form-label">
-                  Số điện thoại <span className="text-error">*</span>
-                </label>
-                <input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleFormChange}
-                  className={`admin-form-input ${errors.phone ? 'admin-form-input-error' : ''}`}
-                />
-                {errors.phone && (
-                  <p className="admin-form-error">{errors.phone}</p>
-                )}
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="role" className="admin-form-label">
-                  Vai trò <span className="text-error">*</span>
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleFormChange}
-                  className="admin-form-select"
-                >
-                  <option value="customer">Khách hàng</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="password" className="admin-form-label">
-                  Mật khẩu {!editingUser && <span className="text-error">*</span>}
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleFormChange}
-                  className={`admin-form-input ${errors.password ? 'admin-form-input-error' : ''}`}
-                />
-                {editingUser && (
-                  <p className="text-text-tertiary text-sm">Để trống nếu không muốn thay đổi mật khẩu</p>
-                )}
-                {errors.password && (
-                  <p className="admin-form-error">{errors.password}</p>
-                )}
-              </div>
-
-              <div className="admin-form-group">
-                <label htmlFor="confirmPassword" className="admin-form-label">
-                  Xác nhận mật khẩu {!editingUser && <span className="text-error">*</span>}
-                </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleFormChange}
-                  className={`admin-form-input ${errors.confirmPassword ? 'admin-form-input-error' : ''}`}
-                />
-                {errors.confirmPassword && (
-                  <p className="admin-form-error">{errors.confirmPassword}</p>
-                )}
-              </div>
-
-              <div className="admin-form-actions">
-                <button 
-                  type="button"
-                  className="admin-btn admin-btn-outline"
-                  onClick={() => setShowUserForm(false)}
-                >
-                  Hủy
-                </button>
-                <button type="submit" className="admin-btn admin-btn-primary">
-                  {editingUser ? 'Cập nhật' : 'Thêm'}
-                </button>
-              </div>
-            </form>
+          </div>
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="phone" className="form-label">
+                Số điện thoại
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleFormChange}
+                className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                placeholder="Nhập số điện thoại (tùy chọn)"
+              />
+              {errors.phone && <div className="invalid-feedback">{errors.phone}</div>}
+            </div>
           </div>
         </div>
-      )}
+
+        <div className="form-group">
+          <label htmlFor="role" className="form-label">
+            Vai trò <span className="text-danger">*</span>
+          </label>
+          <select
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleFormChange}
+            className="form-select"
+          >
+            <option value="customer">Khách hàng</option>
+            <option value="admin">Admin</option>
+            <option value="warehouse_manager">Quản lý kho</option>
+          </select>
+        </div>
+
+        <div className="row">
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                Mật khẩu
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleFormChange}
+                className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                placeholder={editingUser ? "Để trống nếu không muốn thay đổi" : "Nhập mật khẩu (tùy chọn)"}
+              />
+              {editingUser && (
+                <small className="form-text text-muted">Để trống nếu không muốn thay đổi mật khẩu</small>
+              )}
+              {!editingUser && (
+                <small className="form-text text-muted">Để trống nếu muốn tạo tài khoản không có mật khẩu</small>
+              )}
+              {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+            </div>
+          </div>
+          <div className="col-md-6">
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">
+                Xác nhận mật khẩu
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleFormChange}
+                className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                placeholder={editingUser ? "Để trống nếu không đổi mật khẩu" : "Nhập lại mật khẩu (nếu có)"}
+              />
+              {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword}</div>}
+            </div>
+          </div>
+        </div>
+      </FormModal>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="admin-modal-overlay">
-          <div className="admin-modal">
-            <div className="admin-modal-header">
-              <h3>Xác nhận vô hiệu hóa tài khoản</h3>
-            </div>
-            <div className="admin-modal-content">
-              <div className="admin-alert admin-alert-warning">
-                <UserX className="h-5 w-5" />
-                <div>
-                  <p>
-                    Bạn có chắc chắn muốn vô hiệu hóa tài khoản người dùng <strong>"{userToDelete?.name}"</strong>?
-                  </p>
-                  <p className="mt-2">
-                    Người dùng sẽ không thể đăng nhập vào hệ thống.
-                  </p>
-                </div>
-              </div>
-              <div className="admin-form-actions mt-6">
-                <button 
-                  className="admin-btn admin-btn-outline"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Hủy
-                </button>
-                <button 
-                  onClick={confirmDelete}
-                  className="admin-btn admin-btn-danger"
-                >
-                  Vô hiệu hóa
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Xác nhận vô hiệu hóa tài khoản"
+        message={`Bạn có chắc chắn muốn vô hiệu hóa tài khoản người dùng "${userToDelete?.fullName || userToDelete?.full_name || userToDelete?.name}"? Người dùng sẽ không thể đăng nhập vào hệ thống.`}
+        confirmText="Vô hiệu hóa"
+        variant="danger"
+      />
     </div>
   );
 }

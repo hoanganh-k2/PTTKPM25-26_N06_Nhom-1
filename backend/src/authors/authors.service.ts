@@ -36,11 +36,14 @@ export class AuthorsService {
     totalPages: number;
   }> {
     try {
+      console.log('AuthorsService - findAll params:', params);
+      
       let query = this.supabase.from('authors').select('*', { count: 'exact' });
 
-      // Tìm kiếm theo tên
-      if (params.search) {
-        query = query.ilike('name', `%${params.search}%`);
+      // Tìm kiếm theo tên và tiểu sử
+      if (params.search && params.search.trim()) {
+        const searchTerm = params.search.trim();
+        query = query.or(`name.ilike.%${searchTerm}%,biography.ilike.%${searchTerm}%,nationality.ilike.%${searchTerm}%`);
       }
 
       // Lọc theo quốc tịch
@@ -50,7 +53,7 @@ export class AuthorsService {
 
       // Phân trang
       const page = parseInt(params.page) || 1;
-      const limit = parseInt(params.limit) || 10;
+      const limit = params.page ? (parseInt(params.limit) || 10) : 1000; // Nếu không có page thì lấy nhiều hơn
       const start = (page - 1) * limit;
       const end = start + limit - 1;
 
@@ -61,11 +64,15 @@ export class AuthorsService {
       // Sắp xếp
       query = query.order('name', { ascending: true });
 
+      console.log('AuthorsService - executing query...');
       const { data, error, count } = await query;
 
       if (error) {
+        console.error('AuthorsService - query error:', error);
         throw new BadRequestException(`Lỗi khi truy vấn tác giả: ${error.message}`);
       }
+
+      console.log('AuthorsService - query result:', { count, dataLength: data?.length });
 
       const authors = data?.map(author => this.formatAuthor(author)) || [];
 
@@ -76,6 +83,7 @@ export class AuthorsService {
         totalPages: Math.ceil((count || 0) / limit),
       };
     } catch (error) {
+      console.error('AuthorsService - findAll error:', error);
       throw new BadRequestException(`Lỗi khi lấy danh sách tác giả: ${error.message}`);
     }
   }
@@ -105,37 +113,51 @@ export class AuthorsService {
   // Tạo tác giả mới
   async create(createAuthorDto: CreateAuthorDto): Promise<Author> {
     try {
+      console.log('AuthorsService - create author:', createAuthorDto);
+
+      // Validation cơ bản
+      if (!createAuthorDto.name || createAuthorDto.name.trim() === '') {
+        throw new BadRequestException('Tên tác giả không được để trống');
+      }
+
       // Kiểm tra trùng tên
       const { data: existing } = await this.supabase
         .from('authors')
         .select('id')
-        .eq('name', createAuthorDto.name)
+        .eq('name', createAuthorDto.name.trim())
         .single();
 
       if (existing) {
         throw new BadRequestException('Tên tác giả đã tồn tại');
       }
 
+      const authorData = {
+        name: createAuthorDto.name.trim(),
+        biography: createAuthorDto.biography?.trim() || null,
+        birth_date: createAuthorDto.birthDate?.toISOString() || null,
+        nationality: createAuthorDto.nationality?.trim() || null,
+        photo: createAuthorDto.photo?.trim() || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('AuthorsService - inserting author data:', authorData);
+
       const { data, error } = await this.supabase
         .from('authors')
-        .insert([{
-          name: createAuthorDto.name,
-          biography: createAuthorDto.biography,
-          birth_date: createAuthorDto.birthDate?.toISOString(),
-          nationality: createAuthorDto.nationality,
-          photo: createAuthorDto.photo,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }])
+        .insert([authorData])
         .select()
         .single();
 
       if (error) {
+        console.error('AuthorsService - create error:', error);
         throw new BadRequestException(`Lỗi khi tạo tác giả: ${error.message}`);
       }
 
+      console.log('AuthorsService - author created successfully:', data);
       return this.formatAuthor(data);
     } catch (error) {
+      console.error('AuthorsService - create error:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -146,15 +168,22 @@ export class AuthorsService {
   // Cập nhật tác giả
   async update(id: string, updateAuthorDto: UpdateAuthorDto): Promise<Author> {
     try {
+      console.log('AuthorsService - update author:', { id, updateAuthorDto });
+
       // Kiểm tra tác giả tồn tại
       await this.findById(id);
 
-      // Kiểm tra trùng tên (nếu có thay đổi tên)
-      if (updateAuthorDto.name) {
+      // Validation cơ bản
+      if (updateAuthorDto.name !== undefined) {
+        if (!updateAuthorDto.name || updateAuthorDto.name.trim() === '') {
+          throw new BadRequestException('Tên tác giả không được để trống');
+        }
+
+        // Kiểm tra trùng tên (nếu có thay đổi tên)
         const { data: existing } = await this.supabase
           .from('authors')
           .select('id')
-          .eq('name', updateAuthorDto.name)
+          .eq('name', updateAuthorDto.name.trim())
           .neq('id', id)
           .single();
 
@@ -167,11 +196,13 @@ export class AuthorsService {
         updated_at: new Date().toISOString(),
       };
 
-      if (updateAuthorDto.name !== undefined) updateData.name = updateAuthorDto.name;
-      if (updateAuthorDto.biography !== undefined) updateData.biography = updateAuthorDto.biography;
-      if (updateAuthorDto.birthDate !== undefined) updateData.birth_date = updateAuthorDto.birthDate?.toISOString();
-      if (updateAuthorDto.nationality !== undefined) updateData.nationality = updateAuthorDto.nationality;
-      if (updateAuthorDto.photo !== undefined) updateData.photo = updateAuthorDto.photo;
+      if (updateAuthorDto.name !== undefined) updateData.name = updateAuthorDto.name.trim();
+      if (updateAuthorDto.biography !== undefined) updateData.biography = updateAuthorDto.biography?.trim() || null;
+      if (updateAuthorDto.birthDate !== undefined) updateData.birth_date = updateAuthorDto.birthDate?.toISOString() || null;
+      if (updateAuthorDto.nationality !== undefined) updateData.nationality = updateAuthorDto.nationality?.trim() || null;
+      if (updateAuthorDto.photo !== undefined) updateData.photo = updateAuthorDto.photo?.trim() || null;
+
+      console.log('AuthorsService - updating author data:', updateData);
 
       const { data, error } = await this.supabase
         .from('authors')
@@ -181,11 +212,14 @@ export class AuthorsService {
         .single();
 
       if (error) {
+        console.error('AuthorsService - update error:', error);
         throw new BadRequestException(`Lỗi khi cập nhật tác giả: ${error.message}`);
       }
 
+      console.log('AuthorsService - author updated successfully:', data);
       return this.formatAuthor(data);
     } catch (error) {
+      console.error('AuthorsService - update error:', error);
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }

@@ -1,5 +1,5 @@
 // src/models/user.model.ts
-import { IsEmail, IsNotEmpty, MinLength, IsEnum } from 'class-validator';
+import { IsEmail, IsNotEmpty, MinLength, IsEnum, IsOptional } from 'class-validator';
 
 // Định nghĩa enum cho các vai trò
 export enum UserRole {
@@ -65,19 +65,26 @@ export class LoginDto {
 }
 
 export class UpdateUserDto {
+  @IsOptional()
   @IsNotEmpty()
   fullName?: string;
 
+  @IsOptional()
   @IsEmail()
   email?: string;
 
-  @MinLength(6)
+  @IsOptional()
+  @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
   password?: string;
 
+  @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
 
+  @IsOptional()
   phone?: string;
+  
+  @IsOptional()
   address?: string;
 }
 

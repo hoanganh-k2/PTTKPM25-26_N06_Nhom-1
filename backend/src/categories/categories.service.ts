@@ -42,11 +42,11 @@ export class CategoriesService {
 
       // Phân trang
       const page = parseInt(params.page) || 1;
-      const limit = parseInt(params.limit) || 10;
+      const limit = parseInt(params.limit) || 50; // Tăng limit cho categories
       const start = (page - 1) * limit;
       const end = start + limit - 1;
 
-      if (params.page) {
+      if (params.page && params.limit) {
         query = query.range(start, end);
       }
 
@@ -56,6 +56,7 @@ export class CategoriesService {
       const { data, error, count } = await query;
 
       if (error) {
+        console.error('Lỗi Supabase categories:', error);
         throw new BadRequestException(`Lỗi khi truy vấn thể loại: ${error.message}`);
       }
 
@@ -68,6 +69,7 @@ export class CategoriesService {
         totalPages: Math.ceil((count || 0) / limit),
       };
     } catch (error) {
+      console.error('Lỗi categories service:', error);
       throw new BadRequestException(`Lỗi khi lấy danh sách thể loại: ${error.message}`);
     }
   }

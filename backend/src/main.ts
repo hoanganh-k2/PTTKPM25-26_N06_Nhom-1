@@ -14,9 +14,9 @@ async function bootstrap() {
   // Cấu hình validation
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Loại bỏ các thuộc tính không được định nghĩa trong DTO
+      whitelist: true, // Chỉ giữ lại properties có validation decorators
       transform: true, // Tự động chuyển đổi kiểu dữ liệu
-      forbidNonWhitelisted: true, // Báo lỗi nếu có thuộc tính không được định nghĩa
+      forbidNonWhitelisted: false, // Cho phép extra properties để không báo lỗi
     }),
   );
 

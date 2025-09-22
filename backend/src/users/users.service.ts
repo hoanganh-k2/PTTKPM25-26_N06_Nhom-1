@@ -49,12 +49,15 @@ export class UsersService {
     totalPages: number;
   }> {
     try {
+      console.log('UsersService - findAll params:', params);
+      
       let query = this.supabase.from('users').select('*', { count: 'exact' });
 
       // Tìm kiếm theo từ khóa
-      if (params.search) {
+      if (params.search && params.search.trim()) {
+        const searchTerm = params.search.trim();
         query = query.or(
-          `full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`,
+          `full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`,
         );
       }
 
@@ -65,11 +68,13 @@ export class UsersService {
 
       // Phân trang
       const page = parseInt(params.page) || 1;
-      const limit = parseInt(params.limit) || 10;
+      const limit = params.page ? (parseInt(params.limit) || 10) : 1000; // Nếu không có page thì lấy nhiều hơn
       const start = (page - 1) * limit;
       const end = start + limit - 1;
 
-      query = query.range(start, end);
+      if (params.page) {
+        query = query.range(start, end);
+      }
 
       // Sắp xếp
       if (params.sortBy) {
@@ -79,14 +84,18 @@ export class UsersService {
         query = query.order('created_at', { ascending: false });
       }
 
+      console.log('UsersService - executing query...');
       const { data, error, count } = await query;
 
       if (error) {
+        console.error('UsersService - query error:', error);
         throw new BadRequestException(`Lỗi khi truy vấn người dùng: ${error.message}`);
       }
 
+      console.log('UsersService - query result:', { count, dataLength: data?.length });
+
       // Chuyển đổi từ snake_case sang camelCase
-      const users = data.map(user => this.formatUser(user));
+      const users = data?.map(user => this.formatUser(user)) || [];
 
       return {
         users,
@@ -95,6 +104,7 @@ export class UsersService {
         totalPages: Math.ceil((count || 0) / limit),
       };
     } catch (error) {
+      console.error('UsersService - findAll error:', error);
       throw new BadRequestException(`Lỗi khi lấy danh sách người dùng: ${error.message}`);
     }
   }
@@ -121,11 +131,24 @@ export class UsersService {
   // Tạo người dùng mới
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     try {
+      console.log('UsersService - create user:', { ...createUserDto, password: '[HIDDEN]' });
+
+      // Validation cơ bản
+      if (!createUserDto.email || createUserDto.email.trim() === '') {
+        throw new BadRequestException('Email không được để trống');
+      }
+      if (!createUserDto.fullName || createUserDto.fullName.trim() === '') {
+        throw new BadRequestException('Họ tên không được để trống');
+      }
+      if (!createUserDto.password || createUserDto.password.length < 6) {
+        throw new BadRequestException('Mật khẩu phải có ít nhất 6 ký tự');
+      }
+
       // Kiểm tra email đã tồn tại chưa
       const { data: existingUser } = await this.supabase
         .from('users')
         .select('*')
-        .eq('email', createUserDto.email)
+        .eq('email', createUserDto.email.trim())
         .single();
 
       if (existingUser) {
@@ -135,29 +158,37 @@ export class UsersService {
       // Hash password
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
+      const userData = {
+        full_name: createUserDto.fullName.trim(),
+        email: createUserDto.email.trim().toLowerCase(),
+        password: hashedPassword,
+        is_admin: createUserDto.role === UserRole.ADMIN,
+        role: createUserDto.role || UserRole.CUSTOMER,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('UsersService - inserting user data:', { ...userData, password: '[HIDDEN]' });
+
       // Tạo user mới trong Supabase
       const { data, error } = await this.supabase
         .from('users')
-        .insert([
-          {
-            full_name: createUserDto.fullName,
-            email: createUserDto.email,
-            password: hashedPassword,
-            // Remove phone and address properties from initial user creation
-            // They can be added later when updating the user profile
-            is_admin: createUserDto.role === UserRole.ADMIN,
-            role: createUserDto.role || UserRole.CUSTOMER,
-          },
-        ])
+        .insert([userData])
         .select('*')
         .single();
 
       if (error) {
+        console.error('UsersService - create error:', error);
         throw new BadRequestException(`Lỗi khi tạo người dùng: ${error.message}`);
       }
 
+      console.log('UsersService - user created successfully:', { ...data, password: '[HIDDEN]' });
       return this.formatUser(data);
     } catch (error) {
+      console.error('UsersService - create error:', error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new BadRequestException(`Lỗi khi tạo người dùng: ${error.message}`);
     }
   }
@@ -165,15 +196,28 @@ export class UsersService {
   // Cập nhật thông tin người dùng
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     try {
+      console.log('UsersService - update user:', { id, updateUserDto: { ...updateUserDto, password: updateUserDto.password ? '[HIDDEN]' : undefined } });
+
       // Kiểm tra người dùng tồn tại
       await this.findById(id);
 
+      // Validation cơ bản
+      if (updateUserDto.fullName !== undefined && (!updateUserDto.fullName || updateUserDto.fullName.trim() === '')) {
+        throw new BadRequestException('Họ tên không được để trống');
+      }
+      // Chỉ validate password nếu nó được cung cấp và không rỗng
+      if (updateUserDto.password !== undefined && updateUserDto.password !== '' && updateUserDto.password.length < 6) {
+        throw new BadRequestException('Mật khẩu phải có ít nhất 6 ký tự');
+      }
+
       // Chuẩn bị dữ liệu cập nhật
       const updateData: any = {
-        full_name: updateUserDto.fullName,
-        phone: updateUserDto.phone,
-        address: updateUserDto.address,
+        updated_at: new Date().toISOString(),
       };
+
+      if (updateUserDto.fullName !== undefined) updateData.full_name = updateUserDto.fullName.trim();
+      if (updateUserDto.phone !== undefined) updateData.phone = updateUserDto.phone?.trim() || null;
+      if (updateUserDto.address !== undefined) updateData.address = updateUserDto.address?.trim() || null;
 
       // Nếu có email mới và khác email cũ, kiểm tra email đã tồn tại chưa
       if (updateUserDto.email) {
@@ -183,32 +227,34 @@ export class UsersService {
           .eq('id', id)
           .single();
 
-        if (currentUser && currentUser.email !== updateUserDto.email) {
+        if (currentUser && currentUser.email !== updateUserDto.email.trim().toLowerCase()) {
           // Kiểm tra email mới đã tồn tại chưa
           const { data: existingUser } = await this.supabase
             .from('users')
             .select('*')
-            .eq('email', updateUserDto.email)
+            .eq('email', updateUserDto.email.trim().toLowerCase())
             .single();
 
           if (existingUser) {
             throw new BadRequestException('Email đã được sử dụng');
           }
 
-          updateData.email = updateUserDto.email;
+          updateData.email = updateUserDto.email.trim().toLowerCase();
         }
       }
 
-      // Nếu có mật khẩu mới, hash và cập nhật
-      if (updateUserDto.password) {
+      // Nếu có mật khẩu mới và không rỗng, hash và cập nhật
+      if (updateUserDto.password && updateUserDto.password.trim() !== '') {
         updateData.password = await bcrypt.hash(updateUserDto.password, 10);
       }
 
       // Cập nhật role nếu được cung cấp
-      if (updateUserDto.role) {
+      if (updateUserDto.role !== undefined) {
         updateData.role = updateUserDto.role;
         updateData.is_admin = updateUserDto.role === UserRole.ADMIN;
       }
+
+      console.log('UsersService - updating user data:', { ...updateData, password: updateData.password ? '[HIDDEN]' : undefined });
 
       // Cập nhật trong Supabase
       const { data, error } = await this.supabase
@@ -219,11 +265,17 @@ export class UsersService {
         .single();
 
       if (error) {
+        console.error('UsersService - update error:', error);
         throw new BadRequestException(`Lỗi khi cập nhật người dùng: ${error.message}`);
       }
 
+      console.log('UsersService - user updated successfully:', { ...data, password: '[HIDDEN]' });
       return this.formatUser(data);
     } catch (error) {
+      console.error('UsersService - update error:', error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
       throw new BadRequestException(`Lỗi khi cập nhật người dùng: ${error.message}`);
     }
   }

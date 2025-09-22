@@ -36,11 +36,14 @@ export class PublishersService {
     totalPages: number;
   }> {
     try {
+      console.log('PublishersService - findAll params:', params);
+      
       let query = this.supabase.from('publishers').select('*', { count: 'exact' });
 
-      // Tìm kiếm theo tên
-      if (params.search) {
-        query = query.ilike('name', `%${params.search}%`);
+      // Tìm kiếm theo tên và mô tả
+      if (params.search && params.search.trim()) {
+        const searchTerm = params.search.trim();
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
 
       // Lọc theo năm thành lập
@@ -50,7 +53,7 @@ export class PublishersService {
 
       // Phân trang
       const page = parseInt(params.page) || 1;
-      const limit = parseInt(params.limit) || 10;
+      const limit = params.page ? (parseInt(params.limit) || 10) : 1000; // Nếu không có page thì lấy nhiều hơn
       const start = (page - 1) * limit;
       const end = start + limit - 1;
 
@@ -61,11 +64,15 @@ export class PublishersService {
       // Sắp xếp
       query = query.order('name', { ascending: true });
 
+      console.log('PublishersService - executing query...');
       const { data, error, count } = await query;
 
       if (error) {
+        console.error('PublishersService - query error:', error);
         throw new BadRequestException(`Lỗi khi truy vấn nhà xuất bản: ${error.message}`);
       }
+
+      console.log('PublishersService - query result:', { count, dataLength: data?.length });
 
       const publishers = data?.map(publisher => this.formatPublisher(publisher)) || [];
 
@@ -76,6 +83,7 @@ export class PublishersService {
         totalPages: Math.ceil((count || 0) / limit),
       };
     } catch (error) {
+      console.error('PublishersService - findAll error:', error);
       throw new BadRequestException(`Lỗi khi lấy danh sách nhà xuất bản: ${error.message}`);
     }
   }
@@ -105,37 +113,51 @@ export class PublishersService {
   // Tạo nhà xuất bản mới
   async create(createPublisherDto: CreatePublisherDto): Promise<Publisher> {
     try {
+      console.log('PublishersService - create publisher:', createPublisherDto);
+
+      // Validation cơ bản
+      if (!createPublisherDto.name || createPublisherDto.name.trim() === '') {
+        throw new BadRequestException('Tên nhà xuất bản không được để trống');
+      }
+
       // Kiểm tra trùng tên
       const { data: existing } = await this.supabase
         .from('publishers')
         .select('id')
-        .eq('name', createPublisherDto.name)
+        .eq('name', createPublisherDto.name.trim())
         .single();
 
       if (existing) {
         throw new BadRequestException('Tên nhà xuất bản đã tồn tại');
       }
 
+      const publisherData = {
+        name: createPublisherDto.name.trim(),
+        description: createPublisherDto.description?.trim() || null,
+        founded_year: createPublisherDto.foundedYear || null,
+        logo: createPublisherDto.logo?.trim() || null,
+        website: createPublisherDto.website?.trim() || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('PublishersService - inserting publisher data:', publisherData);
+
       const { data, error } = await this.supabase
         .from('publishers')
-        .insert([{
-          name: createPublisherDto.name,
-          description: createPublisherDto.description,
-          founded_year: createPublisherDto.foundedYear,
-          logo: createPublisherDto.logo,
-          website: createPublisherDto.website,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }])
+        .insert([publisherData])
         .select()
         .single();
 
       if (error) {
+        console.error('PublishersService - create error:', error);
         throw new BadRequestException(`Lỗi khi tạo nhà xuất bản: ${error.message}`);
       }
 
+      console.log('PublishersService - publisher created successfully:', data);
       return this.formatPublisher(data);
     } catch (error) {
+      console.error('PublishersService - create error:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -146,15 +168,22 @@ export class PublishersService {
   // Cập nhật nhà xuất bản
   async update(id: string, updatePublisherDto: UpdatePublisherDto): Promise<Publisher> {
     try {
+      console.log('PublishersService - update publisher:', { id, updatePublisherDto });
+
       // Kiểm tra nhà xuất bản tồn tại
       await this.findById(id);
 
-      // Kiểm tra trùng tên (nếu có thay đổi tên)
-      if (updatePublisherDto.name) {
+      // Validation cơ bản
+      if (updatePublisherDto.name !== undefined) {
+        if (!updatePublisherDto.name || updatePublisherDto.name.trim() === '') {
+          throw new BadRequestException('Tên nhà xuất bản không được để trống');
+        }
+
+        // Kiểm tra trùng tên (nếu có thay đổi tên)
         const { data: existing } = await this.supabase
           .from('publishers')
           .select('id')
-          .eq('name', updatePublisherDto.name)
+          .eq('name', updatePublisherDto.name.trim())
           .neq('id', id)
           .single();
 
@@ -167,11 +196,13 @@ export class PublishersService {
         updated_at: new Date().toISOString(),
       };
 
-      if (updatePublisherDto.name !== undefined) updateData.name = updatePublisherDto.name;
-      if (updatePublisherDto.description !== undefined) updateData.description = updatePublisherDto.description;
-      if (updatePublisherDto.foundedYear !== undefined) updateData.founded_year = updatePublisherDto.foundedYear;
-      if (updatePublisherDto.logo !== undefined) updateData.logo = updatePublisherDto.logo;
-      if (updatePublisherDto.website !== undefined) updateData.website = updatePublisherDto.website;
+      if (updatePublisherDto.name !== undefined) updateData.name = updatePublisherDto.name.trim();
+      if (updatePublisherDto.description !== undefined) updateData.description = updatePublisherDto.description?.trim() || null;
+      if (updatePublisherDto.foundedYear !== undefined) updateData.founded_year = updatePublisherDto.foundedYear || null;
+      if (updatePublisherDto.logo !== undefined) updateData.logo = updatePublisherDto.logo?.trim() || null;
+      if (updatePublisherDto.website !== undefined) updateData.website = updatePublisherDto.website?.trim() || null;
+
+      console.log('PublishersService - updating publisher data:', updateData);
 
       const { data, error } = await this.supabase
         .from('publishers')
@@ -181,11 +212,14 @@ export class PublishersService {
         .single();
 
       if (error) {
+        console.error('PublishersService - update error:', error);
         throw new BadRequestException(`Lỗi khi cập nhật nhà xuất bản: ${error.message}`);
       }
 
+      console.log('PublishersService - publisher updated successfully:', data);
       return this.formatPublisher(data);
     } catch (error) {
+      console.error('PublishersService - update error:', error);
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }

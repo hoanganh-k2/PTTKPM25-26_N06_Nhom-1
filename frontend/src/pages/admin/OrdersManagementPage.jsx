@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, ChevronLeft, ChevronRight, ShoppingBag, X, RefreshCw } from 'lucide-react';
+import { Search, Filter, Eye, ChevronLeft, ChevronRight, ShoppingBag, X, RefreshCw, Check, Truck, XCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent } from '../../components/ui/card';
 import orderService from '../../services/order.service';
+import { ConfirmModal, Modal } from '../../components/ui/modal';
 import './AdminPages.css';
 
 export default function OrdersManagementPage() {
@@ -15,6 +16,13 @@ export default function OrdersManagementPage() {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showOrderDetail, setShowOrderDetail] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  
+  // Modal states
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [modalOrder, setModalOrder] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -75,8 +83,131 @@ export default function OrdersManagementPage() {
   };
 
   const handleViewOrder = (order) => {
+    console.log('Order data structure:', order); // Debug log
     setSelectedOrder(order);
     setShowOrderDetail(true);
+  };
+
+  // Cập nhật trạng thái đơn hàng
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      if (!orderId || !newStatus) {
+        alert('Dữ liệu không hợp lệ');
+        return;
+      }
+      
+      await orderService.updateOrderStatus(orderId, newStatus);
+      
+      // Cập nhật UI
+      setOrders(orders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: newStatus }
+          : order
+      ));
+      
+      // Cập nhật selectedOrder nếu đang hiển thị modal
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
+      
+      alert('Cập nhật trạng thái đơn hàng thành công!');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái:', error);
+      alert('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng');
+    }
+  };
+
+  // Xác nhận đơn hàng
+  const handleConfirmOrder = (order) => {
+    try {
+      if (!order || !order.id) {
+        alert('Dữ liệu đơn hàng không hợp lệ');
+        return;
+      }
+      setModalOrder(order);
+      setShowConfirmModal(true);
+    } catch (error) {
+      console.error('Error in handleConfirmOrder:', error);
+      alert('Có lỗi xảy ra');
+    }
+  };
+
+  // Hoàn thành đơn hàng
+  const handleCompleteOrder = (order) => {
+    try {
+      if (!order || !order.id) {
+        alert('Dữ liệu đơn hàng không hợp lệ');
+        return;
+      }
+      setModalOrder(order);
+      setShowCompleteModal(true);
+    } catch (error) {
+      console.error('Error in handleCompleteOrder:', error);
+      alert('Có lỗi xảy ra');
+    }
+  };
+
+  // Hủy đơn hàng
+  const handleCancelOrder = (order) => {
+    try {
+      if (!order || !order.id) {
+        alert('Dữ liệu đơn hàng không hợp lệ');
+        return;
+      }
+      setModalOrder(order);
+      setShowCancelModal(true);
+    } catch (error) {
+      console.error('Error in handleCancelOrder:', error);
+      alert('Có lỗi xảy ra');
+    }
+  };
+
+  // Thực hiện xác nhận đơn hàng
+  const confirmOrderAction = async () => {
+    if (!modalOrder) return;
+    
+    setIsUpdating(true);
+    try {
+      await handleUpdateOrderStatus(modalOrder.id, 'shipping');
+      setShowConfirmModal(false);
+      setModalOrder(null);
+    } catch (error) {
+      console.error('Error confirming order:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Thực hiện hoàn thành đơn hàng
+  const completeOrderAction = async () => {
+    if (!modalOrder) return;
+    
+    setIsUpdating(true);
+    try {
+      await handleUpdateOrderStatus(modalOrder.id, 'delivered');
+      setShowCompleteModal(false);
+      setModalOrder(null);
+    } catch (error) {
+      console.error('Error completing order:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Thực hiện hủy đơn hàng
+  const cancelOrderAction = async () => {
+    if (!modalOrder) return;
+    
+    setIsUpdating(true);
+    try {
+      await handleUpdateOrderStatus(modalOrder.id, 'cancelled');
+      setShowCancelModal(false);
+      setModalOrder(null);
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -96,16 +227,57 @@ export default function OrdersManagementPage() {
 
   // Format currency
   const formatCurrency = (value) => {
+    if (!value || isNaN(value)) return '0 ₫';
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
-    }).format(value);
+    }).format(Number(value));
   };
 
-  // Format date
+  // Format date ,,
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
-    return new Date(dateString).toLocaleDateString('vi-VN', options);
+    if (!dateString) return 'N/A';
+    try {
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+      return new Date(dateString).toLocaleDateString('vi-VN', options);
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
+  // Normalize status value
+  const normalizeStatus = (status) => {
+    if (!status) return 'pending';
+    const statusLower = status.toString().toLowerCase();
+    if (statusLower === 'pending' || statusLower === 'chờ xác nhận') return 'pending';
+    if (statusLower === 'processing' || statusLower === 'shipping' || statusLower === 'đang giao hàng') return 'shipping';
+    if (statusLower === 'delivered' || statusLower === 'đã giao hàng') return 'delivered';
+    if (statusLower === 'cancelled' || statusLower === 'đã hủy') return 'cancelled';
+    return 'pending'; // default fallback
+  };
+
+  // Get status display text
+  const getStatusText = (status) => {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case 'pending': return 'Chờ xác nhận';
+      case 'shipping': return 'Đang giao hàng';
+      case 'delivered': return 'Đã giao hàng';
+      case 'cancelled': return 'Đã hủy';
+      default: return status || 'N/A';
+    }
+  };
+
+  // Get status CSS class
+  const getStatusClass = (status) => {
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case 'pending': return 'status-pending';
+      case 'shipping': return 'status-processing';
+      case 'delivered': return 'status-completed';
+      case 'cancelled': return 'status-cancelled';
+      default: return 'status-pending';
+    }
   };
 
   return (
@@ -185,37 +357,93 @@ export default function OrdersManagementPage() {
                 ) : (
                   orders.map((order) => (
                     <tr key={order.id}>
-                      <td className="font-medium">{order.id}</td>
+                      <td className="font-medium">{order.id || 'N/A'}</td>
                       <td>{formatDate(order.createdAt || order.orderDate)}</td>
                       <td>
-                        <div>{order.user?.fullName || order.customer?.name || 'N/A'}</div>
-                        <div className="text-sm text-text-tertiary">{order.user?.phone || order.customer?.phone || 'N/A'}</div>
+                        <div>{order.user?.fullName || order.user?.full_name || 'N/A'}</div>
+                        <div className="text-sm text-text-tertiary">{order.user?.phone || 'N/A'}</div>
                       </td>
                       <td style={{textAlign: 'right'}} className="font-medium">
-                        {formatCurrency(order.totalAmount || order.total)}
+                        {formatCurrency(order.totalAmount || 0)}
                       </td>
                       <td>{order.paymentMethod || 'N/A'}</td>
                       <td style={{textAlign: 'center'}}>
-                        <span className={`status-indicator ${
-                          order.status === 'pending' || order.status === 'Chờ xác nhận' ? 'status-pending' : 
-                          order.status === 'shipping' || order.status === 'Đang giao hàng' ? 'status-processing' : 
-                          order.status === 'delivered' || order.status === 'Đã giao hàng' ? 'status-completed' : 
-                          'status-cancelled'
-                        }`}>
-                          {order.status === 'pending' ? 'Chờ xác nhận' :
-                           order.status === 'shipping' ? 'Đang giao hàng' :
-                           order.status === 'delivered' ? 'Đã giao hàng' :
-                           order.status === 'cancelled' ? 'Đã hủy' :
-                           order.status}
-                        </span>
+                        {(() => {
+                          try {
+                            return (
+                              <span className={`status-indicator ${getStatusClass(order.status)}`}>
+                                {getStatusText(order.status)}
+                              </span>
+                            );
+                          } catch (error) {
+                            console.error('Error rendering status:', error);
+                            return <span className="status-indicator status-pending">N/A</span>;
+                          }
+                        })()}
                       </td>
                       <td className="actions">
-                        <button 
-                          className="admin-action-btn view"
-                          onClick={() => handleViewOrder(order)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
+                        <div className="action-buttons">
+                          <button 
+                            className="admin-action-btn view"
+                            onClick={() => handleViewOrder(order)}
+                            title="Xem chi tiết"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          
+                          {/* Hiển thị nút tương ứng với trạng thái */}
+                          {(() => {
+                            try {
+                              const status = normalizeStatus(order.status);
+                              if (status === 'pending') {
+                                return (
+                                  <>
+                                    <button 
+                                      className="admin-action-btn confirm"
+                                      onClick={() => handleConfirmOrder(order)}
+                                      title="Xác nhận đơn hàng"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </button>
+                                    <button 
+                                      className="admin-action-btn cancel"
+                                      onClick={() => handleCancelOrder(order)}
+                                      title="Hủy đơn hàng"
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </button>
+                                  </>
+                                );
+                              }
+                              
+                              if (status === 'shipping') {
+                                return (
+                                  <>
+                                    <button 
+                                      className="admin-action-btn complete"
+                                      onClick={() => handleCompleteOrder(order)}
+                                      title="Đánh dấu đã giao"
+                                    >
+                                      <Truck className="h-4 w-4" />
+                                    </button>
+                                    <button 
+                                      className="admin-action-btn cancel"
+                                      onClick={() => handleCancelOrder(order)}
+                                      title="Hủy đơn hàng"
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </button>
+                                  </>
+                                );
+                              }
+                              
+                              return null;
+                            } catch (error) {
+                              console.error('Error rendering action buttons:', error);
+                              return null;
+                            }
+                          })()}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -259,23 +487,15 @@ export default function OrdersManagementPage() {
       </div>
 
       {/* Order Detail Modal */}
-      {showOrderDetail && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto fade-in">
-            <div className="flex justify-between items-center mb-5 pb-3 border-b">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="text-primary h-5 w-5" />
-                <h3 className="text-lg font-bold">Chi tiết đơn hàng #{selectedOrder.id}</h3>
-              </div>
-              <button 
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                onClick={() => setShowOrderDetail(false)}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 slide-up">
+      <Modal
+        isOpen={showOrderDetail}
+        onClose={() => setShowOrderDetail(false)}
+        title={`Chi tiết đơn hàng #${selectedOrder?.id}`}
+        size="extra-large"
+      >
+        {selectedOrder && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="admin-card">
                 <div className="admin-card-header">
                   <div className="admin-card-title">Thông tin đơn hàng</div>
@@ -284,26 +504,21 @@ export default function OrdersManagementPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-text-tertiary">Mã đơn hàng:</span>
-                      <span className="font-medium">{selectedOrder.id}</span>
+                      <span className="font-medium">{selectedOrder.id || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-text-tertiary">Ngày đặt hàng:</span>
-                      <span>{formatDate(selectedOrder.orderDate)}</span>
+                      <span>{formatDate(selectedOrder.createdAt)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-text-tertiary">Trạng thái:</span>
-                      <span className={`status-indicator ${
-                          selectedOrder.status === 'Chờ xác nhận' ? 'status-pending' : 
-                          selectedOrder.status === 'Đang giao hàng' ? 'status-processing' : 
-                          selectedOrder.status === 'Đã giao hàng' ? 'status-completed' : 
-                          'status-cancelled'
-                        }`}>
-                        {selectedOrder.status}
+                      <span className={`status-indicator ${getStatusClass(selectedOrder.status)}`}>
+                        {getStatusText(selectedOrder.status)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-text-tertiary">Phương thức thanh toán:</span>
-                      <span>{selectedOrder.paymentMethod}</span>
+                      <span>{selectedOrder.paymentMethod || 'N/A'}</span>
                     </div>
                     {selectedOrder.notes && (
                       <div className="pt-2 border-t mt-2">
@@ -323,26 +538,26 @@ export default function OrdersManagementPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-text-tertiary">Tên:</span>
-                      <span className="font-medium">{selectedOrder.customer.name}</span>
+                      <span className="font-medium">{selectedOrder.user?.fullName || selectedOrder.user?.full_name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-text-tertiary">Email:</span>
-                      <span>{selectedOrder.customer.email}</span>
+                      <span>{selectedOrder.user?.email || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-text-tertiary">Số điện thoại:</span>
-                      <span>{selectedOrder.customer.phone}</span>
+                      <span>{selectedOrder.user?.phone || 'N/A'}</span>
                     </div>
                     <div className="pt-2 border-t mt-2">
                       <span className="text-text-tertiary block mb-2">Địa chỉ giao hàng:</span>
-                      <p className="p-3 bg-bg-light rounded-md">{selectedOrder.shippingAddress}</p>
+                      <p className="p-3 bg-bg-light rounded-md">{selectedOrder.shippingAddress?.city || selectedOrder.shippingAddress?.address || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="admin-card mb-6 slide-up" style={{animationDelay: '0.1s'}}>
+            <div className="admin-card mb-6">
               <div className="admin-card-header">
                 <div className="admin-card-title">Chi tiết sản phẩm</div>
               </div>
@@ -358,17 +573,17 @@ export default function OrdersManagementPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedOrder.items.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.title}</td>
-                          <td style={{textAlign: 'center'}}>{item.quantity}</td>
-                          <td style={{textAlign: 'right'}}>{formatCurrency(item.price / item.quantity)}</td>
-                          <td style={{textAlign: 'right'}} className="font-medium">{formatCurrency(item.price)}</td>
+                      {(selectedOrder.items || []).map((item, index) => (
+                        <tr key={item.id || index}>
+                          <td>{item.book?.title || item.title || 'N/A'}</td>
+                          <td style={{textAlign: 'center'}}>{item.quantity || 0}</td>
+                          <td style={{textAlign: 'right'}}>{formatCurrency(item.unitPrice || 0)}</td>
+                          <td style={{textAlign: 'right'}} className="font-medium">{formatCurrency(item.totalPrice || 0)}</td>
                         </tr>
                       ))}
                       <tr>
                         <td colSpan="3" style={{textAlign: 'right'}} className="font-medium">Tổng cộng:</td>
-                        <td style={{textAlign: 'right'}} className="font-bold">{formatCurrency(selectedOrder.total)}</td>
+                        <td style={{textAlign: 'right'}} className="font-bold">{formatCurrency(selectedOrder.totalAmount || 0)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -377,51 +592,82 @@ export default function OrdersManagementPage() {
             </div>
             
             <div className="flex justify-between pt-4 border-t">
-              {selectedOrder.status === 'Chờ xác nhận' && (
+              {normalizeStatus(selectedOrder.status) === 'pending' && (
                 <div className="space-x-2">
-                  <button style={{
-                    background: 'var(--bg-white)',
-                    color: 'var(--error)',
-                    padding: '0.5rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    fontWeight: '500',
-                    border: '1px solid var(--error)'
-                  }}>
+                  <button 
+                    className="btn btn-danger"
+                    onClick={() => {
+                      setShowOrderDetail(false);
+                      handleCancelOrder(selectedOrder);
+                    }}
+                  >
                     Hủy đơn
                   </button>
-                  <button style={{
-                    background: 'var(--success)',
-                    color: 'white',
-                    padding: '0.5rem 1rem',
-                    borderRadius: 'var(--radius-md)',
-                    fontWeight: '500'
-                  }}>
+                  <button 
+                    className="btn btn-success"
+                    onClick={() => {
+                      setShowOrderDetail(false);
+                      handleConfirmOrder(selectedOrder);
+                    }}
+                  >
                     Xác nhận đơn
                   </button>
                 </div>
               )}
-              {selectedOrder.status === 'Đang giao hàng' && (
-                <button style={{
-                  background: 'var(--success)',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: '500'
-                }}>
+              {normalizeStatus(selectedOrder.status) === 'shipping' && (
+                <button 
+                  className="btn btn-success"
+                  onClick={() => {
+                    setShowOrderDetail(false);
+                    handleCompleteOrder(selectedOrder);
+                  }}
+                >
                   Đánh dấu đã giao
                 </button>
               )}
-              <button 
-                className="admin-filter-btn"
-                onClick={() => setShowOrderDetail(false)}
-                style={{marginLeft: 'auto'}}
-              >
-                Đóng
-              </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
+
+      {/* Confirm Order Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmOrderAction}
+        title="Xác nhận đơn hàng"
+        message={`Bạn có chắc chắn muốn xác nhận đơn hàng #${modalOrder?.id}? Đơn hàng sẽ chuyển sang trạng thái "Đang giao hàng".`}
+        confirmText="Xác nhận"
+        cancelText="Hủy"
+        variant="primary"
+        isLoading={isUpdating}
+      />
+
+      {/* Complete Order Modal */}
+      <ConfirmModal
+        isOpen={showCompleteModal}
+        onClose={() => setShowCompleteModal(false)}
+        onConfirm={completeOrderAction}
+        title="Hoàn thành đơn hàng"
+        message={`Bạn có chắc chắn muốn đánh dấu đơn hàng #${modalOrder?.id} đã giao thành công?`}
+        confirmText="Hoàn thành"
+        cancelText="Hủy"
+        variant="success"
+        isLoading={isUpdating}
+      />
+
+      {/* Cancel Order Modal */}
+      <ConfirmModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={cancelOrderAction}
+        title="Hủy đơn hàng"
+        message={`Bạn có chắc chắn muốn hủy đơn hàng #${modalOrder?.id}? Hành động này không thể hoàn tác.`}
+        confirmText="Hủy đơn hàng"
+        cancelText="Không hủy"
+        variant="danger"
+        isLoading={isUpdating}
+      />
     </div>
   );
 }
