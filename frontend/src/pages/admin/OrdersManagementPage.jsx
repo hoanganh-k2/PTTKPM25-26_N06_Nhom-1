@@ -83,7 +83,6 @@ export default function OrdersManagementPage() {
   };
 
   const handleViewOrder = (order) => {
-    console.log('Order data structure:', order); // Debug log
     setSelectedOrder(order);
     setShowOrderDetail(true);
   };

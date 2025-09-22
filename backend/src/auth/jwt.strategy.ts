@@ -10,10 +10,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private supabase;
 
   constructor() {
+    const jwtSecret = process.env.JWT_SECRET || 'bookstore-super-secret-key-2025-very-long-and-secure';
+    
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'your_jwt_secret_key',
+      secretOrKey: jwtSecret,
     });
 
     // Khởi tạo Supabase client
@@ -34,7 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    return {
+    const userResponse = {
       id: user.id,
       fullName: user.full_name,
       email: user.email,
@@ -45,5 +47,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       phone: user.phone,
       address: user.address,
     };
+
+    return userResponse;
   }
 }

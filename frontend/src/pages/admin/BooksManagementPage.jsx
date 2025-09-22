@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight, Filter, BookOpen, RefreshCw, AlertCircle, Save } from 'lucide-react';
 import bookService from '../../services/book.service';
@@ -44,28 +44,28 @@ export default function BooksManagementPage() {
 
   useEffect(() => {
     fetchBooks();
-  }, [currentPage, selectedCategory]);
+  }, [fetchBooks]);
 
   useEffect(() => {
     // Load reference data only once
     fetchCategories();
     fetchAuthors();
     fetchPublishers();
-  }, []);
+  }, [fetchCategories, fetchAuthors, fetchPublishers]);
 
   useEffect(() => {
     // Debounce search
     const timeoutId = setTimeout(() => {
       if (searchQuery !== undefined) {
         setCurrentPage(1);
-        fetchBooks();
       }
     }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const fetchBooks = async () => {
+  // Memoized fetch functions
+  const fetchBooks = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
@@ -89,9 +89,9 @@ export default function BooksManagementPage() {
       setTotalPages(1);
       setLoading(false);
     }
-  };
+  }, [currentPage, selectedCategory, searchQuery]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await categoryService.getAllCategories();
       setCategories(response.categories || response || []);
@@ -99,9 +99,9 @@ export default function BooksManagementPage() {
       console.error('Lỗi khi lấy danh sách thể loại:', error);
       setCategories([]);
     }
-  };
+  }, []);
 
-  const fetchAuthors = async () => {
+  const fetchAuthors = useCallback(async () => {
     try {
       const response = await authorService.getAllAuthors();
       setAuthors(response.authors || response || []);
@@ -109,9 +109,9 @@ export default function BooksManagementPage() {
       console.error('Lỗi khi lấy danh sách tác giả:', error);
       setAuthors([]);
     }
-  };
+  }, []);
 
-  const fetchPublishers = async () => {
+  const fetchPublishers = useCallback(async () => {
     try {
       const response = await publisherService.getAllPublishers();
       setPublishers(response.publishers || response || []);
@@ -119,7 +119,7 @@ export default function BooksManagementPage() {
       console.error('Lỗi khi lấy danh sách nhà xuất bản:', error);
       setPublishers([]);
     }
-  };
+  }, []);
 
   const resetForm = () => {
     setFormData({
@@ -211,9 +211,6 @@ export default function BooksManagementPage() {
         pageCount: formData.pages ? parseInt(formData.pages) : undefined,
         ISBN: formData.isbn.trim() || undefined
       };
-      
-      console.log('Submitting book data:', apiData);
-      
       if (editingBook) {
         await bookService.updateBook(editingBook.id, apiData);
       } else {
@@ -261,13 +258,7 @@ export default function BooksManagementPage() {
       fetchBooks();
     } catch (error) {
       console.error('Lỗi khi xóa sách:', error);
-      console.log('Error object:', JSON.stringify(error, null, 2));
-      console.log('Error message:', error.message);
-      
-      // Kiểm tra nếu là lỗi foreign key constraint
       const errorMsg = error.message || error.error || (typeof error === 'string' ? error : 'Lỗi không xác định');
-      console.log('Final error message:', errorMsg);
-      
       if (errorMsg.includes('đơn hàng') || errorMsg.includes('stock = 0') || errorMsg.includes('foreign key')) {
         // Hiển thị dialog hỏi có muốn ẩn sách không
         const userConfirm = window.confirm(

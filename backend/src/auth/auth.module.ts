@@ -10,7 +10,7 @@ import { JwtStrategy } from './jwt.strategy';
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your_jwt_secret_key',
+      secret: process.env.JWT_SECRET || 'bookstore-super-secret-key-2025-very-long-and-secure',
       signOptions: { expiresIn: '24h' },
     }),
   ],

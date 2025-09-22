@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import bookService from "../services/book.service";
 import { useCart } from "../contexts/CartContext";
@@ -25,22 +25,28 @@ export default function BooksPage() {
   const [publishers, setPublishers] = useState([]);
   const [totalBooks, setTotalBooks] = useState(0);
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        setLoading(true);
-        const response = await bookService.getAllBooks(filters);
-        setBooks(response.books);
-        setTotalBooks(response.total);
-      } catch (err) {
-        setError(err.message || "Không thể tải danh sách sách");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Debounced fetch function
+  const fetchBooks = useCallback(async (currentFilters) => {
+    try {
+      setLoading(true);
+      const response = await bookService.getAllBooks(currentFilters);
+      setBooks(response.books);
+      setTotalBooks(response.total);
+      setError(null);
+    } catch (err) {
+      setError(err.message || "Không thể tải danh sách sách");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    fetchBooks();
-  }, [filters]);
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchBooks(filters);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [filters, fetchBooks]);
 
   // Tạm thời giả lập danh sách sách, khi có API thật sẽ sử dụng data từ API
   const dummyBooks = [

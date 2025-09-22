@@ -6,13 +6,23 @@ const orderService = {
   getCart: async () => {
     try {
       const response = await api.get("/cart");
+      
+      if (!response || !response.data) {
+        return {
+          items: [],
+          totalItems: 0,
+          totalAmount: 0
+        };
+      }
+      
       return response.data;
     } catch (error) {
-      throw (
-        error.response?.data || {
-          message: "Có lỗi xảy ra khi lấy thông tin giỏ hàng",
-        }
-      );
+      // Return empty cart structure instead of throwing
+      return {
+        items: [],
+        totalItems: 0,
+        totalAmount: 0
+      };
     }
   },
 

@@ -64,9 +64,7 @@ export default function AdminLayout() {
   }
   
   // Chỉ cho phép admin và thủ kho truy cập
-  console.log('Auth status:', { isAdmin, isWarehouseManager, currentUser });
   if (!isAdmin && !isWarehouseManager) {
-    console.log('Redirecting to home - no permission');
     return <Navigate to="/" replace />;
   }
 

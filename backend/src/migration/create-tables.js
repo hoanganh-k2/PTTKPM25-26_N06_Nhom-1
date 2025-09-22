@@ -35,6 +35,22 @@ async function createTables() {
       console.log('Authors table created successfully');
     }
 
+    // Create carts table
+    const { error: cartsError } = await supabase.rpc('create_carts_table');
+    if (cartsError) {
+      console.error('Error creating carts table:', cartsError);
+    } else {
+      console.log('Carts table created successfully');
+    }
+
+    // Create cart_items table
+    const { error: cartItemsError } = await supabase.rpc('create_cart_items_table');
+    if (cartItemsError) {
+      console.error('Error creating cart_items table:', cartItemsError);
+    } else {
+      console.log('Cart items table created successfully');
+    }
+
     // Continue with other tables...
     
     console.log('Database migration completed');

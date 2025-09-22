@@ -1,11 +1,33 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
+import { useAuth } from "../contexts/AuthContext";
 import "./CartPage.css";
 
+// Debounce function
+function useDebounce(func, delay) {
+  const [debounceTimer, setDebounceTimer] = useState(null);
+  
+  return useCallback((...args) => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    
+    const newTimer = setTimeout(() => {
+      func(...args);
+    }, delay);
+    
+    setDebounceTimer(newTimer);
+  }, [func, delay, debounceTimer]);
+}
+
 export default function CartPage() {
-  const { cartItems, totalItems, totalAmount, updateQuantity, removeFromCart, clearCart } = useCart();
+  const { cartItems, totalItems, totalAmount, updateQuantity, removeFromCart, clearCart, loading, updating } = useCart();
+  const { isAuthenticated } = useAuth();
   const [checkoutStep, setCheckoutStep] = useState(1); // 1: Giỏ hàng, 2: Thông tin giao hàng, 3: Thanh toán
+
+  // Debounced update quantity function
+  const debouncedUpdateQuantity = useDebounce(updateQuantity, 500);
 
   const handleUpdateQuantity = (productId, newQuantity) => {
     if (newQuantity <= 0) {
@@ -13,7 +35,8 @@ export default function CartPage() {
         removeFromCart(productId);
       }
     } else {
-      updateQuantity(productId, newQuantity);
+      // Use debounced version for input changes
+      debouncedUpdateQuantity(productId, newQuantity);
     }
   };
 
@@ -34,6 +57,36 @@ export default function CartPage() {
     alert("Chức năng thanh toán sẽ được phát triển sau!");
   };
 
+  // Kiểm tra nếu người dùng chưa đăng nhập
+  if (!isAuthenticated) {
+    return (
+      <div className="cart-page">
+        <h1 className="cart-title">Giỏ hàng của bạn</h1>
+        <div className="empty-cart">
+          <div className="empty-cart-icon">🔒</div>
+          <p className="empty-cart-message">Vui lòng đăng nhập để xem giỏ hàng</p>
+          <p className="empty-cart-suggestion">Đăng nhập để thêm sản phẩm vào giỏ hàng và tiếp tục mua sắm</p>
+          <Link to="/login" className="continue-shopping-button">
+            Đăng nhập
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Hiển thị loading state
+  if (loading) {
+    return (
+      <div className="cart-page">
+        <h1 className="cart-title">Giỏ hàng của bạn</h1>
+        <div className="empty-cart">
+          <div className="empty-cart-icon">⏳</div>
+          <p className="empty-cart-message">Đang tải giỏ hàng...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (cartItems.length === 0) {
     return (
       <div className="cart-page">
@@ -53,6 +106,24 @@ export default function CartPage() {
   return (
     <div className="cart-page">
       <h1 className="cart-title">Giỏ hàng của bạn</h1>
+      
+      {/* Show updating indicator */}
+      {updating && (
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          right: '20px',
+          background: '#f0f0f0',
+          padding: '8px 16px',
+          borderRadius: '4px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          fontSize: '14px',
+          zIndex: 1000
+        }}>
+          Đang cập nhật...
+        </div>
+      )}
+      
       <div className="cart-container">
         <div className="cart-items-container">
           <div className="cart-header">
@@ -87,7 +158,8 @@ export default function CartPage() {
                 <div className="quantity-control">
                   <button
                     className="quantity-btn"
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                    disabled={updating}
                   >
                     -
                   </button>
@@ -98,11 +170,12 @@ export default function CartPage() {
                     value={item.quantity}
                     onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value) || 1)}
                     className="quantity-input"
+                    disabled={updating}
                   />
                   <button
                     className="quantity-btn"
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                    disabled={item.quantity >= item.stock}
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    disabled={item.quantity >= item.stock || updating}
                   >
                     +
                   </button>

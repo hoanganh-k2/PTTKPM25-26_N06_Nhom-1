@@ -36,8 +36,6 @@ export class AuthorsService {
     totalPages: number;
   }> {
     try {
-      console.log('AuthorsService - findAll params:', params);
-      
       let query = this.supabase.from('authors').select('*', { count: 'exact' });
 
       // Tìm kiếm theo tên và tiểu sử
@@ -63,17 +61,11 @@ export class AuthorsService {
 
       // Sắp xếp
       query = query.order('name', { ascending: true });
-
-      console.log('AuthorsService - executing query...');
       const { data, error, count } = await query;
 
       if (error) {
-        console.error('AuthorsService - query error:', error);
         throw new BadRequestException(`Lỗi khi truy vấn tác giả: ${error.message}`);
       }
-
-      console.log('AuthorsService - query result:', { count, dataLength: data?.length });
-
       const authors = data?.map(author => this.formatAuthor(author)) || [];
 
       return {
@@ -83,7 +75,6 @@ export class AuthorsService {
         totalPages: Math.ceil((count || 0) / limit),
       };
     } catch (error) {
-      console.error('AuthorsService - findAll error:', error);
       throw new BadRequestException(`Lỗi khi lấy danh sách tác giả: ${error.message}`);
     }
   }
@@ -113,8 +104,6 @@ export class AuthorsService {
   // Tạo tác giả mới
   async create(createAuthorDto: CreateAuthorDto): Promise<Author> {
     try {
-      console.log('AuthorsService - create author:', createAuthorDto);
-
       // Validation cơ bản
       if (!createAuthorDto.name || createAuthorDto.name.trim() === '') {
         throw new BadRequestException('Tên tác giả không được để trống');
@@ -140,9 +129,6 @@ export class AuthorsService {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-
-      console.log('AuthorsService - inserting author data:', authorData);
-
       const { data, error } = await this.supabase
         .from('authors')
         .insert([authorData])
@@ -150,14 +136,10 @@ export class AuthorsService {
         .single();
 
       if (error) {
-        console.error('AuthorsService - create error:', error);
         throw new BadRequestException(`Lỗi khi tạo tác giả: ${error.message}`);
       }
-
-      console.log('AuthorsService - author created successfully:', data);
       return this.formatAuthor(data);
     } catch (error) {
-      console.error('AuthorsService - create error:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -168,8 +150,6 @@ export class AuthorsService {
   // Cập nhật tác giả
   async update(id: string, updateAuthorDto: UpdateAuthorDto): Promise<Author> {
     try {
-      console.log('AuthorsService - update author:', { id, updateAuthorDto });
-
       // Kiểm tra tác giả tồn tại
       await this.findById(id);
 
@@ -201,9 +181,6 @@ export class AuthorsService {
       if (updateAuthorDto.birthDate !== undefined) updateData.birth_date = updateAuthorDto.birthDate?.toISOString() || null;
       if (updateAuthorDto.nationality !== undefined) updateData.nationality = updateAuthorDto.nationality?.trim() || null;
       if (updateAuthorDto.photo !== undefined) updateData.photo = updateAuthorDto.photo?.trim() || null;
-
-      console.log('AuthorsService - updating author data:', updateData);
-
       const { data, error } = await this.supabase
         .from('authors')
         .update(updateData)
@@ -212,14 +189,10 @@ export class AuthorsService {
         .single();
 
       if (error) {
-        console.error('AuthorsService - update error:', error);
         throw new BadRequestException(`Lỗi khi cập nhật tác giả: ${error.message}`);
       }
-
-      console.log('AuthorsService - author updated successfully:', data);
       return this.formatAuthor(data);
     } catch (error) {
-      console.error('AuthorsService - update error:', error);
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
@@ -241,7 +214,6 @@ export class AuthorsService {
         .limit(1);
 
       if (booksError) {
-        console.warn('Không thể kiểm tra sách của tác giả:', booksError);
       }
 
       if (books && books.length > 0) {

@@ -36,8 +36,6 @@ export class PublishersService {
     totalPages: number;
   }> {
     try {
-      console.log('PublishersService - findAll params:', params);
-      
       let query = this.supabase.from('publishers').select('*', { count: 'exact' });
 
       // Tìm kiếm theo tên và mô tả
@@ -63,17 +61,11 @@ export class PublishersService {
 
       // Sắp xếp
       query = query.order('name', { ascending: true });
-
-      console.log('PublishersService - executing query...');
       const { data, error, count } = await query;
 
       if (error) {
-        console.error('PublishersService - query error:', error);
         throw new BadRequestException(`Lỗi khi truy vấn nhà xuất bản: ${error.message}`);
       }
-
-      console.log('PublishersService - query result:', { count, dataLength: data?.length });
-
       const publishers = data?.map(publisher => this.formatPublisher(publisher)) || [];
 
       return {
@@ -83,7 +75,6 @@ export class PublishersService {
         totalPages: Math.ceil((count || 0) / limit),
       };
     } catch (error) {
-      console.error('PublishersService - findAll error:', error);
       throw new BadRequestException(`Lỗi khi lấy danh sách nhà xuất bản: ${error.message}`);
     }
   }
@@ -113,8 +104,6 @@ export class PublishersService {
   // Tạo nhà xuất bản mới
   async create(createPublisherDto: CreatePublisherDto): Promise<Publisher> {
     try {
-      console.log('PublishersService - create publisher:', createPublisherDto);
-
       // Validation cơ bản
       if (!createPublisherDto.name || createPublisherDto.name.trim() === '') {
         throw new BadRequestException('Tên nhà xuất bản không được để trống');
@@ -140,9 +129,6 @@ export class PublishersService {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-
-      console.log('PublishersService - inserting publisher data:', publisherData);
-
       const { data, error } = await this.supabase
         .from('publishers')
         .insert([publisherData])
@@ -150,14 +136,10 @@ export class PublishersService {
         .single();
 
       if (error) {
-        console.error('PublishersService - create error:', error);
         throw new BadRequestException(`Lỗi khi tạo nhà xuất bản: ${error.message}`);
       }
-
-      console.log('PublishersService - publisher created successfully:', data);
       return this.formatPublisher(data);
     } catch (error) {
-      console.error('PublishersService - create error:', error);
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -168,8 +150,6 @@ export class PublishersService {
   // Cập nhật nhà xuất bản
   async update(id: string, updatePublisherDto: UpdatePublisherDto): Promise<Publisher> {
     try {
-      console.log('PublishersService - update publisher:', { id, updatePublisherDto });
-
       // Kiểm tra nhà xuất bản tồn tại
       await this.findById(id);
 
@@ -201,9 +181,6 @@ export class PublishersService {
       if (updatePublisherDto.foundedYear !== undefined) updateData.founded_year = updatePublisherDto.foundedYear || null;
       if (updatePublisherDto.logo !== undefined) updateData.logo = updatePublisherDto.logo?.trim() || null;
       if (updatePublisherDto.website !== undefined) updateData.website = updatePublisherDto.website?.trim() || null;
-
-      console.log('PublishersService - updating publisher data:', updateData);
-
       const { data, error } = await this.supabase
         .from('publishers')
         .update(updateData)
@@ -212,14 +189,10 @@ export class PublishersService {
         .single();
 
       if (error) {
-        console.error('PublishersService - update error:', error);
         throw new BadRequestException(`Lỗi khi cập nhật nhà xuất bản: ${error.message}`);
       }
-
-      console.log('PublishersService - publisher updated successfully:', data);
       return this.formatPublisher(data);
     } catch (error) {
-      console.error('PublishersService - update error:', error);
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
@@ -241,7 +214,6 @@ export class PublishersService {
         .limit(1);
 
       if (booksError) {
-        console.warn('Không thể kiểm tra sách của nhà xuất bản:', booksError);
       }
 
       if (books && books.length > 0) {

@@ -358,7 +358,6 @@ export class OrdersService {
           });
           
         if (updateError) {
-          console.error(`Lỗi khi khôi phục tồn kho sách ${item.bookId}: ${updateError.message}`);
         }
       }
       
@@ -544,6 +543,96 @@ export class OrdersService {
       return Object.values(groupedData).sort((a: any, b: any) => a.date.localeCompare(b.date));
     } catch (error) {
       throw new BadRequestException(`Lỗi khi lấy thống kê đơn hàng: ${error.message}`);
+    }
+  }
+
+  // Method for dashboard stats - optimized queries
+  async getStats() {
+    try {
+      // Tối ưu: chỉ lấy count và sum thay vì toàn bộ dữ liệu
+      const totalOrdersQuery = this.supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true });
+
+      // Tính tổng doanh thu (chỉ các đơn đã hoàn thành)
+      const revenueQuery = this.supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('status', OrderStatus.DELIVERED);
+
+      // Lấy đơn hàng gần đây với user info
+      const recentOrdersQuery = this.supabase
+        .from('orders')
+        .select(`
+          id, total_amount, status, created_at,
+          users!inner(id, full_name, email)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Tính số đơn hàng trong tháng này và tháng trước
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const ordersThisMonthQuery = this.supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startOfMonth.toISOString());
+
+      const startOfLastMonth = new Date();
+      startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
+      startOfLastMonth.setDate(1);
+      startOfLastMonth.setHours(0, 0, 0, 0);
+
+      const ordersLastMonthQuery = this.supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startOfLastMonth.toISOString())
+        .lt('created_at', startOfMonth.toISOString());
+
+      const [
+        { count: totalOrders },
+        { data: revenueData },
+        { data: recentOrders },
+        { count: ordersThisMonth },
+        { count: ordersLastMonth }
+      ] = await Promise.all([
+        totalOrdersQuery,
+        revenueQuery,
+        recentOrdersQuery,
+        ordersThisMonthQuery,
+        ordersLastMonthQuery
+      ]);
+
+      // Tính tổng doanh thu
+      const totalRevenue = revenueData?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+
+      // Tính % tăng trưởng
+      const growth = ordersLastMonth > 0 
+        ? Math.round(((ordersThisMonth - ordersLastMonth) / ordersLastMonth) * 100)
+        : 0;
+
+      // Format recent orders
+      const formattedRecentOrders = (recentOrders || []).map(order => ({
+        id: order.id,
+        totalAmount: order.total_amount,
+        status: order.status,
+        customerName: order.users?.full_name,
+        customerEmail: order.users?.email,
+        createdAt: new Date(order.created_at),
+      }));
+
+      return {
+        total: totalOrders || 0,
+        totalRevenue,
+        recentOrders: formattedRecentOrders,
+        ordersThisMonth: ordersThisMonth || 0,
+        ordersLastMonth: ordersLastMonth || 0,
+        growth,
+      };
+    } catch (error) {
+      throw new Error(`Lỗi khi lấy thống kê đơn hàng: ${error.message}`);
     }
   }
 }

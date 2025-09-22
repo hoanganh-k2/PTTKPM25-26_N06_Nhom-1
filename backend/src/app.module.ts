@@ -11,6 +11,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { CategoriesModule } from './categories/categories.module';
 import { AuthorsModule } from './authors/authors.module';
 import { PublishersModule } from './publishers/publishers.module';
+import { CartModule } from './cart/cart.module';
 import { SeedCommand } from './data/seed.command';
 
 @Module({
@@ -27,6 +28,7 @@ import { SeedCommand } from './data/seed.command';
     CategoriesModule,
     AuthorsModule,
     PublishersModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeedCommand],

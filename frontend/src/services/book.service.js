@@ -47,9 +47,7 @@ const bookService = {
   // Cập nhật sách (Admin)
   updateBook: async (id, bookData) => {
     try {
-      console.log('book.service - updateBook called with:', { id, bookData });
       const response = await api.put(`/books/${id}`, bookData);
-      console.log('book.service - updateBook response:', response.data);
       return response.data;
     } catch (error) {
       throw (
@@ -66,10 +64,6 @@ const bookService = {
       const response = await api.delete(`/books/${id}`);
       return response.data;
     } catch (error) {
-      console.log('book.service deleteBook error:', error);
-      console.log('error.response:', error.response);
-      console.log('error.response.data:', error.response?.data);
-      
       throw (
         error.response?.data || {
           message: "Có lỗi xảy ra khi xóa sách",

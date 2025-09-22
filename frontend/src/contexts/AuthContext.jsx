@@ -10,8 +10,14 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Kiểm tra nếu đã đăng nhập khi component được mount
     const user = authService.getCurrentUser();
-    if (user) {
+    const token = authService.getToken();
+    
+    // Chỉ set user nếu có cả user và token
+    if (user && token) {
       setCurrentUser(user);
+    } else {
+      // Xóa dữ liệu cũ nếu không đầy đủ
+      authService.logout();
     }
     setLoading(false);
   }, []);
@@ -30,6 +36,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     authService.logout();
     setCurrentUser(null);
+    // Giỏ hàng giờ được lưu trên server, không cần xóa localStorage
   };
 
   // Kiểm tra vai trò người dùng
@@ -40,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     user: currentUser, // Add user alias for compatibility with Navbar
     currentUser,
     loading,
-    isAuthenticated: !!currentUser,
+    isAuthenticated: !!currentUser && !!authService.getToken(),
     isAdmin,
     isWarehouseManager,
     login,

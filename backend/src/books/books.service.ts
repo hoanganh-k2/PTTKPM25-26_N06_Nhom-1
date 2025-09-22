@@ -2,17 +2,60 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateBookDto, UpdateBookDto, Book } from '../models/book.model';
 import { createClient } from '@supabase/supabase-js';
+import { AdminCacheService } from '../cache/admin-cache.service';
 
 @Injectable()
 export class BooksService {
   private supabase;
+  
+  // Simple in-memory cache
+  private cache = {
+    authors: new Map(),
+    publishers: new Map(),
+    categories: new Map(),
+    lastUpdated: {
+      authors: 0,
+      publishers: 0,
+      categories: 0
+    }
+  };
+  
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 phút
 
-  constructor() {
+  constructor(private readonly cacheService: AdminCacheService) {
     // Khởi tạo Supabase client
     this.supabase = createClient(
       process.env.SUPABASE_URL || '',
       process.env.SUPABASE_KEY || '',
     );
+  }
+
+  // Cache helper methods
+  private async getCachedCategories(categoryIds: string[]): Promise<Map<string, any>> {
+    const now = Date.now();
+    const isExpired = now - this.cache.lastUpdated.categories > this.CACHE_TTL;
+    
+    if (isExpired || this.cache.categories.size === 0) {
+      // Refresh cache
+      const { data: categories } = await this.supabase
+        .from('categories')
+        .select('id, name');
+      
+      this.cache.categories.clear();
+      categories?.forEach(cat => this.cache.categories.set(cat.id, cat));
+      this.cache.lastUpdated.categories = now;
+    }
+    
+    // Return requested categories
+    const result = new Map();
+    categoryIds.forEach(id => {
+      const category = this.cache.categories.get(id);
+      if (category) {
+        result.set(id, category);
+      }
+    });
+    
+    return result;
   }
 
   // Chuyển đổi từ snake_case sang camelCase và lấy thông tin liên quan
@@ -48,7 +91,6 @@ export class BooksService {
           (formattedBook as any).author = author;
         }
       } catch (error) {
-        console.warn('Không thể lấy thông tin tác giả:', error);
       }
     }
 
@@ -65,7 +107,6 @@ export class BooksService {
           (formattedBook as any).publisher = publisher;
         }
       } catch (error) {
-        console.warn('Không thể lấy thông tin nhà xuất bản:', error);
       }
     }
 
@@ -81,80 +122,142 @@ export class BooksService {
           (formattedBook as any).categories = categories;
         }
       } catch (error) {
-        console.warn('Không thể lấy thông tin thể loại:', error);
       }
     }
 
     return formattedBook;
   }
 
-  // Lấy tất cả sách với phân trang và lọc
+  // Format book với data đã JOIN sẵn (tối ưu hiệu suất)
+  private formatBookWithJoinedData(book: any, categoriesMap: Map<string, any>): Book {
+    const formattedBook: Book = {
+      id: book.id,
+      title: book.title,
+      description: book.description,
+      price: book.price,
+      stock: book.stock,
+      authorId: book.author_id,
+      publisherId: book.publisher_id,
+      categoryIds: book.category_ids || [],
+      ISBN: book.isbn,
+      publishYear: book.publish_year,
+      coverImage: book.cover_image,
+      createdAt: new Date(book.created_at),
+      updatedAt: new Date(book.updated_at),
+    };
+
+    // Thêm thông tin author (đã JOIN)
+    if (book.authors) {
+      (formattedBook as any).author = book.authors;
+    }
+
+    // Thêm thông tin publisher (đã JOIN)
+    if (book.publishers) {
+      (formattedBook as any).publisher = book.publishers;
+    }
+
+    // Thêm thông tin categories (từ categoriesMap)
+    if (book.category_ids && book.category_ids.length > 0) {
+      const categories = book.category_ids
+        .map(id => categoriesMap.get(id))
+        .filter(cat => cat !== undefined);
+      
+      if (categories.length > 0) {
+        (formattedBook as any).categories = categories;
+      }
+    }
+
+    return formattedBook;
+  }
+
+  // Lấy tất cả sách với phân trang và lọc - with cache
   async findAll(params: any = {}): Promise<{ books: Book[]; total: number; page: number; totalPages: number }> {
     try {
-      console.log('BooksService - findAll params:', params);
+      // Generate cache key cho pagination và filtering
+      const cacheKey = this.cacheService.generateKey('books:list', params);
       
-      let query = this.supabase.from('books').select('*', { count: 'exact' });
+      return await this.cacheService.getOrSet(
+        cacheKey,
+        async () => {
+          // Sử dụng JOIN để lấy data một lần thay vì N+1 queries
+          let query = this.supabase
+            .from('books')
+            .select(`
+              *,
+              authors (id, name),
+              publishers (id, name)
+            `, { count: 'exact' });
 
-      // Tìm kiếm theo từ khóa
-      if (params.search && params.search.trim()) {
-        const searchTerm = params.search.trim();
-        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,isbn.ilike.%${searchTerm}%`);
-      }
+          // Tìm kiếm theo từ khóa
+          if (params.search && params.search.trim()) {
+            const searchTerm = params.search.trim();
+            query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,isbn.ilike.%${searchTerm}%`);
+          }
 
-      // Lọc theo category
-      if (params.categoryId) {
-        query = query.contains('category_ids', [params.categoryId]);
-      }
+          // Lọc theo category
+          if (params.categoryId) {
+            query = query.contains('category_ids', [params.categoryId]);
+          }
 
-      // Lọc theo author
-      if (params.authorId) {
-        query = query.eq('author_id', params.authorId);
-      }
+          // Lọc theo author
+          if (params.authorId) {
+            query = query.eq('author_id', params.authorId);
+          }
 
-      // Lọc theo publisher
-      if (params.publisherId) {
-        query = query.eq('publisher_id', params.publisherId);
-      }
+          // Lọc theo publisher
+          if (params.publisherId) {
+            query = query.eq('publisher_id', params.publisherId);
+          }
 
-      // Phân trang
-      const page = parseInt(params.page) || 1;
-      const limit = params.page ? (parseInt(params.limit) || 10) : 1000; // Nếu không có page thì lấy nhiều hơn
-      const start = (page - 1) * limit;
-      const end = start + limit - 1;
+          // Phân trang
+          const page = parseInt(params.page) || 1;
+          const limit = params.page ? (parseInt(params.limit) || 10) : 1000; // Nếu không có page thì lấy nhiều hơn
+          const start = (page - 1) * limit;
+          const end = start + limit - 1;
 
-      if (params.page) {
-        query = query.range(start, end);
-      }
+          if (params.page) {
+            query = query.range(start, end);
+          }
 
-      // Sắp xếp
-      if (params.sortBy) {
-        const order = params.sortOrder === 'desc' ? 'desc' : 'asc';
-        query = query.order(params.sortBy, { ascending: order === 'asc' });
-      } else {
-        query = query.order('created_at', { ascending: false });
-      }
+          // Sắp xếp
+          if (params.sortBy) {
+            const order = params.sortOrder === 'desc' ? 'desc' : 'asc';
+            query = query.order(params.sortBy, { ascending: order === 'asc' });
+          } else {
+            query = query.order('created_at', { ascending: false });
+          }
+          
+          const { data, error, count } = await query;
 
-      console.log('BooksService - executing query...');
-      const { data, error, count } = await query;
+          if (error) {
+            throw new Error(`Không thể lấy danh sách sách: ${error.message}`);
+          }
 
-      if (error) {
-        console.error('BooksService - query error:', error);
-        throw new Error(`Không thể lấy danh sách sách: ${error.message}`);
-      }
+          // Lấy categories một lần cho tất cả books với cache
+          const categoryIds = new Set<string>();
+          data?.forEach(book => {
+            if (book.category_ids && Array.isArray(book.category_ids)) {
+              book.category_ids.forEach(id => categoryIds.add(id));
+            }
+          });
 
-      console.log('BooksService - query result:', { count, dataLength: data?.length });
+          let categoriesMap = new Map();
+          if (categoryIds.size > 0) {
+            categoriesMap = await this.getCachedCategories(Array.from(categoryIds));
+          }
 
-      // Chuyển đổi từ snake_case sang camelCase và thêm thông tin liên quan
-      const books = await Promise.all(data?.map(book => this.formatBook(book)) || []);
+          // Format books với data đã có
+          const books = data?.map(book => this.formatBookWithJoinedData(book, categoriesMap)) || [];
 
-      return { 
-        books, 
-        total: count || 0,
-        page,
-        totalPages: Math.ceil((count || 0) / limit)
-      };
+          return { 
+            books, 
+            total: count || 0,
+            page,
+            totalPages: Math.ceil((count || 0) / limit)
+          };
+        }
+      );
     } catch (error) {
-      console.error('BooksService - findAll error:', error);
       throw new Error(`Không thể lấy danh sách sách: ${error.message}`);
     }
   }
@@ -163,7 +266,11 @@ export class BooksService {
   async findById(id: string): Promise<Book> {
     const { data, error } = await this.supabase
       .from('books')
-      .select('*')
+      .select(`
+        *,
+        authors (id, name),
+        publishers (id, name)
+      `)
       .eq('id', id)
       .single();
 
@@ -171,14 +278,18 @@ export class BooksService {
       throw new NotFoundException(`Không tìm thấy sách với ID: ${id}`);
     }
 
-    return this.formatBook(data);
+    // Lấy categories nếu có với cache
+    let categoriesMap = new Map();
+    if (data.category_ids && data.category_ids.length > 0) {
+      categoriesMap = await this.getCachedCategories(data.category_ids);
+    }
+
+    return this.formatBookWithJoinedData(data, categoriesMap);
   }
 
   // Tạo sách mới
   async create(createBookDto: CreateBookDto): Promise<Book> {
     try {
-      console.log('BooksService - create book:', createBookDto);
-
       // Lọc ra chỉ những field cần thiết, bỏ qua populated fields
       const cleanDto = {
         title: createBookDto.title,
@@ -228,9 +339,6 @@ export class BooksService {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-
-      console.log('BooksService - inserting book data:', bookData);
-
       const { data, error } = await this.supabase
         .from('books')
         .insert([bookData])
@@ -238,14 +346,15 @@ export class BooksService {
         .single();
 
       if (error) {
-        console.error('BooksService - create error:', error);
         throw new Error(`Không thể tạo sách: ${error.message}`);
       }
 
-      console.log('BooksService - book created successfully:', data);
+      // Invalidate cache after create
+      this.cacheService.clearByPattern('books:*');
+      this.cacheService.clearByPattern('dashboard:*');
+
       return this.formatBook(data);
     } catch (error) {
-      console.error('BooksService - create error:', error);
       throw error;
     }
   }
@@ -253,8 +362,6 @@ export class BooksService {
   // Cập nhật sách
   async update(id: string, updateBookDto: UpdateBookDto): Promise<Book> {
     try {
-      console.log('BooksService - update book:', { id, updateBookDto });
-
       // Kiểm tra sách có tồn tại không
       const existingBook = await this.findById(id);
 
@@ -302,9 +409,6 @@ export class BooksService {
       if (cleanDto.language !== undefined) updateData.language = cleanDto.language?.trim() || 'vi';
       if (cleanDto.pageCount !== undefined) updateData.page_count = cleanDto.pageCount;
       if (cleanDto.coverImage !== undefined) updateData.cover_image = cleanDto.coverImage?.trim() || null;
-
-      console.log('BooksService - updating book data:', updateData);
-
       const { data, error } = await this.supabase
         .from('books')
         .update(updateData)
@@ -313,14 +417,15 @@ export class BooksService {
         .single();
 
       if (error) {
-        console.error('BooksService - update error:', error);
         throw new Error(`Không thể cập nhật sách: ${error.message}`);
       }
 
-      console.log('BooksService - book updated successfully:', data);
+      // Invalidate cache after update
+      this.cacheService.clearByPattern('books:*');
+      this.cacheService.clearByPattern('dashboard:*');
+
       return this.formatBook(data);
     } catch (error) {
-      console.error('BooksService - update error:', error);
       throw error;
     }
   }
@@ -328,8 +433,6 @@ export class BooksService {
   // Xóa sách
   async remove(id: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('BooksService - remove book:', id);
-
       // Kiểm tra sách có tồn tại không
       await this.findById(id);
 
@@ -341,7 +444,6 @@ export class BooksService {
         .limit(1);
 
       if (orderError) {
-        console.error('BooksService - check order items error:', orderError);
         throw new BadRequestException('Lỗi khi kiểm tra đơn hàng liên quan');
       }
 
@@ -353,17 +455,18 @@ export class BooksService {
       const { error } = await this.supabase.from('books').delete().eq('id', id);
 
       if (error) {
-        console.error('BooksService - remove error:', error);
         throw new Error(`Không thể xóa sách: ${error.message}`);
       }
 
-      console.log('BooksService - book removed successfully');
+      // Invalidate cache after delete
+      this.cacheService.clearByPattern('books:*');
+      this.cacheService.clearByPattern('dashboard:*');
+
       return {
         success: true,
         message: 'Xóa sách thành công',
       };
     } catch (error) {
-      console.error('BooksService - remove error:', error);
       throw error;
     }
   }
@@ -371,8 +474,6 @@ export class BooksService {
   // Ẩn sách (soft delete) - set stock = 0 thay vì xóa
   async hideBook(id: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('BooksService - hide book:', id);
-
       // Kiểm tra sách có tồn tại không
       await this.findById(id);
 
@@ -385,17 +486,13 @@ export class BooksService {
         .eq('id', id);
 
       if (error) {
-        console.error('BooksService - hide book error:', error);
         throw new Error(`Không thể ẩn sách: ${error.message}`);
       }
-
-      console.log('BooksService - book hidden successfully');
       return {
         success: true,
         message: 'Đã ẩn sách thành công (set stock = 0)',
       };
     } catch (error) {
-      console.error('BooksService - hide book error:', error);
       throw error;
     }
   }
@@ -459,5 +556,45 @@ export class BooksService {
     const books = await Promise.all(data.map((book) => this.formatBook(book)));
 
     return { books, total: count || 0 };
+  }
+
+  // Method for dashboard stats - optimized queries
+  async getStats() {
+    try {
+      // Tối ưu: chỉ lấy count thay vì toàn bộ dữ liệu
+      const totalBooksQuery = this.supabase
+        .from('books')
+        .select('*', { count: 'exact', head: true });
+      
+      // Lấy sách có stock thấp với thông tin cần thiết
+      const lowStockQuery = this.supabase
+        .from('books')
+        .select(`
+          id, title, stock, price, cover_image,
+          authors!inner(name)
+        `)
+        .lt('stock', 10)
+        .order('stock', { ascending: true })
+        .limit(5);
+
+      const [{ count: totalBooks }, { data: lowStockBooks }] = await Promise.all([
+        totalBooksQuery,
+        lowStockQuery
+      ]);
+
+      return {
+        total: totalBooks || 0,
+        lowStockBooks: (lowStockBooks || []).map(book => ({
+          id: book.id,
+          title: book.title,
+          stock: book.stock,
+          price: book.price,
+          coverImage: book.cover_image,
+          authorName: book.authors?.name
+        })),
+      };
+    } catch (error) {
+      throw new Error(`Lỗi khi lấy thống kê sách: ${error.message}`);
+    }
   }
 }

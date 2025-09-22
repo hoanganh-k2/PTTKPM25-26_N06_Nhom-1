@@ -59,7 +59,6 @@ export class BooksController {
     @Param('id') id: string,
     @Body() updateBookDto: UpdateBookDto,
   ): Promise<Book> {
-    console.log('BooksController - update received:', { id, updateBookDto, raw: JSON.stringify(updateBookDto) });
     return this.booksService.update(id, updateBookDto);
   }
 

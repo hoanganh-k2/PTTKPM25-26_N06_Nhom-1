@@ -13,7 +13,6 @@ const authService = {
         role: 'customer'
       };
       
-      console.log('Auth service sending registration data:', JSON.stringify(registerPayload));
       const response = await api.post("/auth/register", registerPayload);
       return response.data;
     } catch (error) {

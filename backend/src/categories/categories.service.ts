@@ -56,7 +56,6 @@ export class CategoriesService {
       const { data, error, count } = await query;
 
       if (error) {
-        console.error('Lỗi Supabase categories:', error);
         throw new BadRequestException(`Lỗi khi truy vấn thể loại: ${error.message}`);
       }
 
@@ -69,7 +68,6 @@ export class CategoriesService {
         totalPages: Math.ceil((count || 0) / limit),
       };
     } catch (error) {
-      console.error('Lỗi categories service:', error);
       throw new BadRequestException(`Lỗi khi lấy danh sách thể loại: ${error.message}`);
     }
   }
@@ -191,7 +189,6 @@ export class CategoriesService {
         .limit(1);
 
       if (booksError) {
-        console.warn('Không thể kiểm tra sách sử dụng thể loại:', booksError);
       }
 
       if (books && books.length > 0) {

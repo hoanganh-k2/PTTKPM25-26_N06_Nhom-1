@@ -235,8 +235,6 @@ export default function UsersManagementPage() {
           updateData.password = formData.password.trim();
         }
         
-        console.log('Update data being sent:', updateData); // Debug log
-        
         await userService.updateUser(editingUser.id, updateData);
         alert('Cập nhật thông tin người dùng thành công!');
       } else {
@@ -256,8 +254,6 @@ export default function UsersManagementPage() {
         if (formData.password && formData.password.trim() && formData.password.length > 0) {
           newUserData.password = formData.password.trim();
         }
-        
-        console.log('Create data being sent:', newUserData); // Debug log
         
         await userService.createUser(newUserData);
         alert('Thêm người dùng mới thành công!');
