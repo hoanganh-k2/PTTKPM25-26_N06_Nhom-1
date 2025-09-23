@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import "./CartPage.css";
@@ -24,6 +24,7 @@ function useDebounce(func, delay) {
 export default function CartPage() {
   const { cartItems, totalItems, totalAmount, updateQuantity, removeFromCart, clearCart, loading, updating } = useCart();
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [checkoutStep, setCheckoutStep] = useState(1); // 1: Giỏ hàng, 2: Thông tin giao hàng, 3: Thanh toán
 
   // Debounced update quantity function
@@ -53,8 +54,8 @@ export default function CartPage() {
   };
 
   const handleProceedToCheckout = () => {
-    // Trong pha đầu, chúng ta chỉ cần thông báo là đã đặt hàng thành công
-    alert("Chức năng thanh toán sẽ được phát triển sau!");
+    // Chuyển đến trang checkout
+    navigate('/checkout');
   };
 
   // Kiểm tra nếu người dùng chưa đăng nhập

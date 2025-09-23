@@ -178,12 +178,21 @@ export default function BooksPage() {
         
         <div className="books-grid-container">
           {loading ? (
-            <div className="loading-spinner">Đang tải danh sách sách...</div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '300px',
+              fontSize: '1.1rem',
+              color: '#64748b'
+            }}>
+              Đang tải danh sách sách...
+            </div>
           ) : error ? (
             <div className="error-message">{error}</div>
           ) : (
             <>
-              <div className="books-grid">
+              <div className="books-grid fade-in">
                 {displayedBooks.map((book) => (
                   <div key={book.id} className="book-card">
                     <Link to={`/books/${book.id}`} className="book-card-link">

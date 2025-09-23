@@ -15,7 +15,7 @@ export default function OrdersWarehousePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchOrders();
@@ -24,18 +24,34 @@ export default function OrdersWarehousePage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
+      // Sử dụng endpoint admin để lấy tất cả đơn hàng
       const response = await orderService.getAllOrders({
         page: currentPage,
         limit: 10,
-        status: statusFilter
+        status: statusFilter === 'all' ? undefined : statusFilter
       });
       
-      setOrders(response.orders || []);
-      setTotalPages(Math.ceil((response.total || 0) / 10));
+      console.log('Orders response:', response);
+      
+      // Xử lý response structure
+      if (response && response.orders) {
+        setOrders(response.orders);
+        setTotalPages(Math.ceil((response.total || 0) / 10));
+      } else if (response && Array.isArray(response.data)) {
+        setOrders(response.data);
+        setTotalPages(Math.ceil((response.total || response.data.length) / 10));
+      } else if (Array.isArray(response)) {
+        setOrders(response);
+        setTotalPages(Math.ceil(response.length / 10));
+      } else {
+        setOrders([]);
+        setTotalPages(1);
+      }
     } catch (error) {
       console.error("Error fetching orders:", error);
       setOrders([]);
       setTotalPages(1);
+      alert("Có lỗi xảy ra khi tải danh sách đơn hàng: " + (error.message || error));
     } finally {
       setLoading(false);
     }
@@ -66,10 +82,16 @@ export default function OrdersWarehousePage() {
   };
 
   const filteredOrders = searchQuery
-    ? orders.filter(order =>
-        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.user.email.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? orders.filter(order => {
+        const orderId = order.id?.toString().toLowerCase() || '';
+        const userEmail = order.user?.email?.toLowerCase() || '';
+        const userName = order.user?.fullName?.toLowerCase() || '';
+        const searchTerm = searchQuery.toLowerCase();
+        
+        return orderId.includes(searchTerm) || 
+               userEmail.includes(searchTerm) || 
+               userName.includes(searchTerm);
+      })
     : orders;
 
   // Format currency
@@ -111,6 +133,7 @@ export default function OrdersWarehousePage() {
                 onChange={e => setStatusFilter(e.target.value)}
                 className="admin-form-select"
               >
+                <option value="all">Tất cả trạng thái</option>
                 <option value="pending">Chờ xử lý</option>
                 <option value="confirmed">Đã xác nhận</option>
                 <option value="processing">Đang xử lý</option>
@@ -127,11 +150,15 @@ export default function OrdersWarehousePage() {
       </div>
 
       {loading ? (
-        <div className="admin-loading">
-          <div className="admin-loading-spinner">
-            <RefreshCw className="h-8 w-8" />
-          </div>
-          <span>Đang tải dữ liệu...</span>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '200px',
+          fontSize: '1.1rem',
+          color: '#64748b'
+        }}>
+          Đang tải danh sách đơn hàng...
         </div>
       ) : (
         <>
@@ -140,7 +167,7 @@ export default function OrdersWarehousePage() {
               <div key={order.id} className="admin-card slide-up mb-0">
                 <div className="admin-card-header">
                   <div className="admin-card-title flex justify-between items-center w-full">
-                    <span>Đơn hàng #{order.id.substring(0, 8)}</span>
+                    <span>Đơn hàng #{order.id?.toString().substring(0, 8) || 'N/A'}</span>
                     <span className={`status-indicator ${
                       order.status === 'pending' ? 'status-pending' :
                       order.status === 'confirmed' ? 'status-confirmed' :
@@ -164,34 +191,38 @@ export default function OrdersWarehousePage() {
                   <div className="grid gap-3">
                     <div className="flex justify-between">
                       <span className="text-text-tertiary">Khách hàng:</span>
-                      <span className="font-medium">{order.user.fullName}</span>
+                      <span className="font-medium">{order.user?.fullName || order.user?.name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-text-tertiary">Email:</span>
-                      <span>{order.user.email}</span>
+                      <span>{order.user?.email || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-text-tertiary">Ngày đặt:</span>
-                      <span>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
+                      <span>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-text-tertiary">Tổng tiền:</span>
-                      <span className="font-semibold">{formatCurrency(order.totalAmount)}</span>
+                      <span className="font-semibold">{order.totalAmount ? formatCurrency(order.totalAmount) : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-text-tertiary">Số lượng sản phẩm:</span>
-                      <span>{order.items.length}</span>
+                      <span>{order.items?.length || 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-text-tertiary">Địa chỉ giao hàng:</span>
-                      <span className="text-right">{order.shippingAddress.address}, {order.shippingAddress.city}</span>
+                      <span className="text-right">
+                        {order.shippingAddress?.address ? 
+                          `${order.shippingAddress.address}${order.shippingAddress.city ? `, ${order.shippingAddress.city}` : ''}` 
+                          : 'N/A'}
+                      </span>
                     </div>
                   </div>
                   
                   <div className="flex justify-end gap-2 mt-4">
                     <button 
                       className="admin-filter-btn"
-                      onClick={() => navigate(`/admin/orders/${order.id}`)}
+                      onClick={() => navigate(`/admin/warehouse-orders/${order.id}`)}
                     >
                       <Package size={16} />
                       Chi tiết

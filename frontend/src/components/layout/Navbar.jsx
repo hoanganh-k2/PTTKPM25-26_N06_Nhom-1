@@ -46,7 +46,7 @@ export default function Navbar() {
           <div className="nav-auth">
             {user ? (
               <div className="user-menu">
-                <span className="user-greeting">Hello, {user.name}</span>
+                <span className="user-greeting">Hello, {user.fullName || user.name || 'User'}</span>
                 <Link to="/profile" className="nav-link">My Account</Link>
                 <Button 
                   variant="outline" 

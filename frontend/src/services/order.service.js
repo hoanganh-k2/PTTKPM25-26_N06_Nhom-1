@@ -83,9 +83,11 @@ const orderService = {
   // Tạo đơn hàng mới
   createOrder: async (orderData) => {
     try {
+      console.log('Order service sending data:', JSON.stringify(orderData, null, 2));
       const response = await api.post("/orders", orderData);
       return response.data;
     } catch (error) {
+      console.error('Order creation error:', error.response?.data || error);
       throw (
         error.response?.data || { message: "Có lỗi xảy ra khi tạo đơn hàng" }
       );
@@ -109,9 +111,13 @@ const orderService = {
   // Lấy danh sách đơn hàng của người dùng hiện tại
   getUserOrders: async (params = {}) => {
     try {
-      const response = await api.get("/orders", { params });
+      console.log('Calling API: /orders/my-orders with params:', params);
+      const response = await api.get("/orders/my-orders", { params });
+      console.log('API response for getUserOrders:', response);
       return response.data;
     } catch (error) {
+      console.error('getUserOrders error:', error);
+      console.error('Error details:', error.response?.data);
       throw (
         error.response?.data || {
           message: "Có lỗi xảy ra khi lấy danh sách đơn hàng",

@@ -58,7 +58,16 @@ export default function BookDetailPage() {
   if (loading) {
     return (
       <div className="book-detail-container">
-        <div className="loading-spinner">Đang tải thông tin sách...</div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '300px',
+          fontSize: '1.1rem',
+          color: '#64748b'
+        }}>
+          Đang tải thông tin sách...
+        </div>
       </div>
     );
   }
@@ -91,7 +100,7 @@ export default function BookDetailPage() {
   }
 
   return (
-    <div className="book-detail-container">
+    <div className="book-detail-container fade-in">
       <div className="breadcrumb">
         <Link to="/">Trang chủ</Link> / <Link to="/books">Sách</Link> /{" "}
         <span>{book.title}</span>

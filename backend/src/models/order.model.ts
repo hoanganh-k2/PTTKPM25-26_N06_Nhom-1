@@ -1,5 +1,6 @@
 // src/models/order.model.ts
-import { IsEnum, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, Min, ValidateNested, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -71,26 +72,38 @@ export class OrderItem {
 }
 
 export class Address {
+  @IsNotEmpty()
   fullName: string;
+
+  @IsNotEmpty()
   phone: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
+
+  @IsNotEmpty()
+  address: string;
+}
+
+export class CreateOrderItemDto {
+  @IsNotEmpty()
+  bookId: string;
+
+  @IsNumber()
+  @Min(1)
+  quantity: number;
 }
 
 export class CreateOrderDto {
-  @IsNotEmpty()
-  items: {
-    bookId: string;
-    quantity: number;
-  }[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateOrderItemDto)
+  items: CreateOrderItemDto[];
 
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => Address)
   shippingAddress: Address;
 
+  @ValidateNested()
+  @Type(() => Address)
   billingAddress?: Address;
 
   @IsEnum(PaymentMethod)
