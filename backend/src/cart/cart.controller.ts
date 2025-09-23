@@ -23,13 +23,17 @@ export class CartController {
   @Get()
   async getCart(@Request() req): Promise<CartResponseDto> {
     try {
-      const result = await this.cartService.getUserCart(req.user.id);
+      if (!req.user || !req.user.id) {
+        throw new Error('User không được xác thực');
+      }
+      
+      const result = await this.cartService.getOrCreateCart(req.user.id);
       return result;
     } catch (error) {
       // Return empty cart as fallback
       return {
         id: 'fallback-cart',
-        userId: req.user.id,
+        userId: req.user?.id || 'unknown',
         items: [],
         totalItems: 0,
         totalAmount: 0,

@@ -58,17 +58,20 @@ export class BooksService {
     return result;
   }
 
-  // Chuyển đổi từ snake_case sang camelCase và lấy thông tin liên quan
+  // Chuyển đổi từ snake_case sang camelCase và lấy thông tin liên quan (deprecated - use formatBookWithRelationships)
   private async formatBook(book: any): Promise<Book> {
+    return this.formatBookWithRelationships(book);
+  }
+
+  // Format book với data từ many-to-many relationships
+  private async formatBookWithRelationships(book: any): Promise<Book> {
     const formattedBook: Book = {
       id: book.id,
       title: book.title,
       description: book.description,
       price: book.price,
       stock: book.stock,
-      authorId: book.author_id,
       publisherId: book.publisher_id,
-      categoryIds: book.category_ids || [],
       ISBN: book.isbn,
       publishYear: book.publish_year,
       language: book.language,
@@ -78,93 +81,53 @@ export class BooksService {
       updatedAt: new Date(book.updated_at),
     };
 
-    // Thêm thông tin tác giả nếu có
-    if (book.author_id) {
-      try {
-        const { data: author } = await this.supabase
-          .from('authors')
-          .select('id, name')
-          .eq('id', book.author_id)
-          .single();
-        
-        if (author) {
-          (formattedBook as any).author = author;
-        }
-      } catch (error) {
-      }
-    }
-
-    // Thêm thông tin publisher nếu có
-    if (book.publisher_id) {
-      try {
-        const { data: publisher } = await this.supabase
-          .from('publishers')
-          .select('id, name')
-          .eq('id', book.publisher_id)
-          .single();
-        
-        if (publisher) {
-          (formattedBook as any).publisher = publisher;
-        }
-      } catch (error) {
-      }
-    }
-
-    // Thêm thông tin categories nếu có
-    if (book.category_ids && book.category_ids.length > 0) {
-      try {
-        const { data: categories } = await this.supabase
-          .from('categories')
-          .select('id, name')
-          .in('id', book.category_ids);
-        
-        if (categories) {
-          (formattedBook as any).categories = categories;
-        }
-      } catch (error) {
-      }
-    }
-
-    return formattedBook;
-  }
-
-  // Format book với data đã JOIN sẵn (tối ưu hiệu suất)
-  private formatBookWithJoinedData(book: any, categoriesMap: Map<string, any>): Book {
-    const formattedBook: Book = {
-      id: book.id,
-      title: book.title,
-      description: book.description,
-      price: book.price,
-      stock: book.stock,
-      authorId: book.author_id,
-      publisherId: book.publisher_id,
-      categoryIds: book.category_ids || [],
-      ISBN: book.isbn,
-      publishYear: book.publish_year,
-      coverImage: book.cover_image,
-      createdAt: new Date(book.created_at),
-      updatedAt: new Date(book.updated_at),
-    };
-
-    // Thêm thông tin author (đã JOIN)
-    if (book.authors) {
-      (formattedBook as any).author = book.authors;
-    }
-
-    // Thêm thông tin publisher (đã JOIN)
-    if (book.publishers) {
-      (formattedBook as any).publisher = book.publishers;
-    }
-
-    // Thêm thông tin categories (từ categoriesMap)
-    if (book.category_ids && book.category_ids.length > 0) {
-      const categories = book.category_ids
-        .map(id => categoriesMap.get(id))
-        .filter(cat => cat !== undefined);
+    // Lấy thông tin song song để tối ưu performance
+    const [authorsResult, publisherResult, categoriesResult] = await Promise.allSettled([
+      // Lấy authors từ book_authors table
+      this.supabase
+        .from('book_authors')
+        .select(`
+          role,
+          authors!inner (id, name)
+        `)
+        .eq('book_id', book.id),
       
-      if (categories.length > 0) {
-        (formattedBook as any).categories = categories;
-      }
+      // Lấy publisher thông tin
+      book.publisher_id ? this.supabase
+        .from('publishers')
+        .select('id, name')
+        .eq('id', book.publisher_id)
+        .single() : Promise.resolve({ data: null }),
+      
+      // Lấy categories từ book_categories table
+      this.supabase
+        .from('book_categories')
+        .select(`
+          categories!inner (id, name)
+        `)
+        .eq('book_id', book.id)
+    ]);
+
+    // Xử lý authors
+    if (authorsResult.status === 'fulfilled' && authorsResult.value.data && authorsResult.value.data.length > 0) {
+      (formattedBook as any).authors = authorsResult.value.data.map(ba => ({
+        id: ba.authors.id,
+        name: ba.authors.name,
+        role: ba.role
+      }));
+    }
+
+    // Xử lý publisher
+    if (publisherResult.status === 'fulfilled' && publisherResult.value.data) {
+      (formattedBook as any).publisher = publisherResult.value.data;
+    }
+
+    // Xử lý categories
+    if (categoriesResult.status === 'fulfilled' && categoriesResult.value.data && categoriesResult.value.data.length > 0) {
+      (formattedBook as any).categories = categoriesResult.value.data.map(bc => ({
+        id: bc.categories.id,
+        name: bc.categories.name
+      }));
     }
 
     return formattedBook;
@@ -179,14 +142,10 @@ export class BooksService {
       return await this.cacheService.getOrSet(
         cacheKey,
         async () => {
-          // Sử dụng JOIN để lấy data một lần thay vì N+1 queries
+          // Query books table
           let query = this.supabase
             .from('books')
-            .select(`
-              *,
-              authors (id, name),
-              publishers (id, name)
-            `, { count: 'exact' });
+            .select('*', { count: 'exact' });
 
           // Tìm kiếm theo từ khóa
           if (params.search && params.search.trim()) {
@@ -194,19 +153,51 @@ export class BooksService {
             query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,isbn.ilike.%${searchTerm}%`);
           }
 
-          // Lọc theo category
-          if (params.categoryId) {
-            query = query.contains('category_ids', [params.categoryId]);
-          }
-
-          // Lọc theo author
-          if (params.authorId) {
-            query = query.eq('author_id', params.authorId);
-          }
-
           // Lọc theo publisher
           if (params.publisherId) {
             query = query.eq('publisher_id', params.publisherId);
+          }
+
+          // Lọc theo categoryId - tìm books có relationship với category
+          if (params.categoryId) {
+            const { data: bookIds } = await this.supabase
+              .from('book_categories')
+              .select('book_id')
+              .eq('category_id', params.categoryId);
+            
+            if (bookIds && bookIds.length > 0) {
+              const bookIdList = bookIds.map(item => item.book_id);
+              query = query.in('id', bookIdList);
+            } else {
+              // Không có sách nào cho category này
+              return { 
+                books: [], 
+                total: 0,
+                page: parseInt(params.page) || 1,
+                totalPages: 0
+              };
+            }
+          }
+
+          // Lọc theo authorId - tìm books có relationship với author
+          if (params.authorId) {
+            const { data: bookIds } = await this.supabase
+              .from('book_authors')
+              .select('book_id')
+              .eq('author_id', params.authorId);
+            
+            if (bookIds && bookIds.length > 0) {
+              const bookIdList = bookIds.map(item => item.book_id);
+              query = query.in('id', bookIdList);
+            } else {
+              // Không có sách nào cho author này
+              return { 
+                books: [], 
+                total: 0,
+                page: parseInt(params.page) || 1,
+                totalPages: 0
+              };
+            }
           }
 
           // Phân trang
@@ -233,21 +224,10 @@ export class BooksService {
             throw new Error(`Không thể lấy danh sách sách: ${error.message}`);
           }
 
-          // Lấy categories một lần cho tất cả books với cache
-          const categoryIds = new Set<string>();
-          data?.forEach(book => {
-            if (book.category_ids && Array.isArray(book.category_ids)) {
-              book.category_ids.forEach(id => categoryIds.add(id));
-            }
-          });
-
-          let categoriesMap = new Map();
-          if (categoryIds.size > 0) {
-            categoriesMap = await this.getCachedCategories(Array.from(categoryIds));
-          }
-
-          // Format books với data đã có
-          const books = data?.map(book => this.formatBookWithJoinedData(book, categoriesMap)) || [];
+          // Format books với relationships
+          const books = await Promise.all(
+            (data || []).map(book => this.formatBookWithRelationships(book))
+          );
 
           return { 
             books, 
@@ -266,11 +246,7 @@ export class BooksService {
   async findById(id: string): Promise<Book> {
     const { data, error } = await this.supabase
       .from('books')
-      .select(`
-        *,
-        authors (id, name),
-        publishers (id, name)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -278,84 +254,93 @@ export class BooksService {
       throw new NotFoundException(`Không tìm thấy sách với ID: ${id}`);
     }
 
-    // Lấy categories nếu có với cache
-    let categoriesMap = new Map();
-    if (data.category_ids && data.category_ids.length > 0) {
-      categoriesMap = await this.getCachedCategories(data.category_ids);
-    }
-
-    return this.formatBookWithJoinedData(data, categoriesMap);
+    return this.formatBookWithRelationships(data);
   }
 
   // Tạo sách mới
   async create(createBookDto: CreateBookDto): Promise<Book> {
     try {
-      // Lọc ra chỉ những field cần thiết, bỏ qua populated fields
-      const cleanDto = {
-        title: createBookDto.title,
-        description: createBookDto.description,
-        price: createBookDto.price,
-        stock: createBookDto.stock,
-        authorId: createBookDto.authorId,
-        publisherId: createBookDto.publisherId,
-        categoryIds: createBookDto.categoryIds,
-        ISBN: createBookDto.ISBN,
-        publishYear: createBookDto.publishYear,
-        language: createBookDto.language,
-        pageCount: createBookDto.pageCount,
-        coverImage: createBookDto.coverImage,
-      };
-
       // Validation đầy đủ
-      if (!cleanDto.title || cleanDto.title.trim() === '') {
+      if (!createBookDto.title || createBookDto.title.trim() === '') {
         throw new Error('Tiêu đề sách không được để trống');
       }
-      if (!cleanDto.authorId) {
+      if (!createBookDto.authorIds || createBookDto.authorIds.length === 0) {
         throw new Error('Tác giả không được để trống');
       }
-      if (!cleanDto.publisherId) {
+      if (!createBookDto.publisherId) {
         throw new Error('Nhà xuất bản không được để trống');
       }
-      if (cleanDto.price === undefined || cleanDto.price < 0) {
+      if (createBookDto.price === undefined || createBookDto.price < 0) {
         throw new Error('Giá sách phải lớn hơn hoặc bằng 0');
       }
-      if (cleanDto.stock === undefined || cleanDto.stock < 0) {
+      if (createBookDto.stock === undefined || createBookDto.stock < 0) {
         throw new Error('Số lượng phải lớn hơn hoặc bằng 0');
       }
 
-      const bookData = {
-        title: cleanDto.title.trim(),
-        description: cleanDto.description?.trim() || null,
-        price: Number(cleanDto.price) || 0,
-        stock: Number(cleanDto.stock) || 0,
-        author_id: cleanDto.authorId,
-        publisher_id: cleanDto.publisherId,
-        category_ids: cleanDto.categoryIds || [],
-        isbn: cleanDto.ISBN?.trim() || null,
-        publish_year: cleanDto.publishYear || null,
-        language: cleanDto.language?.trim() || 'vi',
-        page_count: cleanDto.pageCount || null,
-        cover_image: cleanDto.coverImage?.trim() || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      const { data, error } = await this.supabase
+      // Tạo book record trước
+      const { data: book, error: bookError } = await this.supabase
         .from('books')
-        .insert([bookData])
+        .insert({
+          title: createBookDto.title,
+          description: createBookDto.description,
+          price: createBookDto.price,
+          stock: createBookDto.stock,
+          publisher_id: createBookDto.publisherId,
+          isbn: createBookDto.ISBN,
+          publish_year: createBookDto.publishYear,
+          language: createBookDto.language,
+          page_count: createBookDto.pageCount,
+          cover_image: createBookDto.coverImage,
+        })
         .select()
         .single();
 
-      if (error) {
-        throw new Error(`Không thể tạo sách: ${error.message}`);
+      if (bookError || !book) {
+        throw new Error(`Không thể tạo sách: ${bookError?.message}`);
       }
 
-      // Invalidate cache after create
-      this.cacheService.clearByPattern('books:*');
-      this.cacheService.clearByPattern('dashboard:*');
+      // Tạo book_authors relationships
+      if (createBookDto.authorIds && createBookDto.authorIds.length > 0) {
+        const bookAuthors = createBookDto.authorIds.map(authorId => ({
+          book_id: book.id,
+          author_id: authorId,
+          role: 'author'
+        }));
 
-      return this.formatBook(data);
+        const { error: authorsError } = await this.supabase
+          .from('book_authors')
+          .insert(bookAuthors);
+
+        if (authorsError) {
+          console.error('Error creating book_authors:', authorsError);
+        }
+      }
+
+      // Tạo book_categories relationships
+      if (createBookDto.categoryIds && createBookDto.categoryIds.length > 0) {
+        const bookCategories = createBookDto.categoryIds.map(categoryId => ({
+          book_id: book.id,
+          category_id: categoryId
+        }));
+
+        const { error: categoriesError } = await this.supabase
+          .from('book_categories')
+          .insert(bookCategories);
+
+        if (categoriesError) {
+          console.error('Error creating book_categories:', categoriesError);
+        }
+      }
+
+      // Clear cache
+      this.cacheService.clearByPattern('books:*');
+
+      // Return formatted book với relationships
+      return this.formatBookWithRelationships(book);
     } catch (error) {
-      throw error;
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Không thể tạo sách'
+      );
     }
   }
 
@@ -365,68 +350,105 @@ export class BooksService {
       // Kiểm tra sách có tồn tại không
       const existingBook = await this.findById(id);
 
-      // Lọc ra chỉ những field cần thiết, bỏ qua populated fields
-      const cleanDto = {
-        title: updateBookDto.title,
-        description: updateBookDto.description,
-        price: updateBookDto.price,
-        stock: updateBookDto.stock,
-        authorId: updateBookDto.authorId,
-        publisherId: updateBookDto.publisherId,
-        categoryIds: updateBookDto.categoryIds,
-        ISBN: updateBookDto.ISBN,
-        publishYear: updateBookDto.publishYear,
-        language: updateBookDto.language,
-        pageCount: updateBookDto.pageCount,
-        coverImage: updateBookDto.coverImage,
-      };
-
       // Validation
-      if (cleanDto.title !== undefined && (!cleanDto.title || cleanDto.title.trim() === '')) {
+      if (updateBookDto.title !== undefined && (!updateBookDto.title || updateBookDto.title.trim() === '')) {
         throw new Error('Tiêu đề sách không được để trống');
       }
-      if (cleanDto.price !== undefined && cleanDto.price < 0) {
+      if (updateBookDto.price !== undefined && updateBookDto.price < 0) {
         throw new Error('Giá sách phải lớn hơn hoặc bằng 0');
       }
-      if (cleanDto.stock !== undefined && cleanDto.stock < 0) {
+      if (updateBookDto.stock !== undefined && updateBookDto.stock < 0) {
         throw new Error('Số lượng phải lớn hơn hoặc bằng 0');
       }
 
-      // Chuẩn bị dữ liệu cập nhật
+      // Chuẩn bị dữ liệu cập nhật cho books table
       const updateData: any = {
         updated_at: new Date().toISOString(),
       };
 
-      if (cleanDto.title !== undefined) updateData.title = cleanDto.title.trim();
-      if (cleanDto.description !== undefined) updateData.description = cleanDto.description?.trim() || '';
-      if (cleanDto.price !== undefined) updateData.price = cleanDto.price;
-      if (cleanDto.stock !== undefined) updateData.stock = cleanDto.stock;
-      if (cleanDto.authorId !== undefined) updateData.author_id = cleanDto.authorId;
-      if (cleanDto.publisherId !== undefined) updateData.publisher_id = cleanDto.publisherId;
-      if (cleanDto.categoryIds !== undefined) updateData.category_ids = cleanDto.categoryIds;
-      if (cleanDto.ISBN !== undefined) updateData.isbn = cleanDto.ISBN?.trim() || null;
-      if (cleanDto.publishYear !== undefined) updateData.publish_year = cleanDto.publishYear;
-      if (cleanDto.language !== undefined) updateData.language = cleanDto.language?.trim() || 'vi';
-      if (cleanDto.pageCount !== undefined) updateData.page_count = cleanDto.pageCount;
-      if (cleanDto.coverImage !== undefined) updateData.cover_image = cleanDto.coverImage?.trim() || null;
-      const { data, error } = await this.supabase
+      if (updateBookDto.title !== undefined) updateData.title = updateBookDto.title.trim();
+      if (updateBookDto.description !== undefined) updateData.description = updateBookDto.description?.trim() || null;
+      if (updateBookDto.price !== undefined) updateData.price = updateBookDto.price;
+      if (updateBookDto.stock !== undefined) updateData.stock = updateBookDto.stock;
+      if (updateBookDto.publisherId !== undefined) updateData.publisher_id = updateBookDto.publisherId;
+      if (updateBookDto.ISBN !== undefined) updateData.isbn = updateBookDto.ISBN?.trim() || null;
+      if (updateBookDto.publishYear !== undefined) updateData.publish_year = updateBookDto.publishYear;
+      if (updateBookDto.language !== undefined) updateData.language = updateBookDto.language?.trim() || null;
+      if (updateBookDto.pageCount !== undefined) updateData.page_count = updateBookDto.pageCount;
+      if (updateBookDto.coverImage !== undefined) updateData.cover_image = updateBookDto.coverImage?.trim() || null;
+
+      // Cập nhật book record
+      const { data: book, error: bookError } = await this.supabase
         .from('books')
         .update(updateData)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) {
-        throw new Error(`Không thể cập nhật sách: ${error.message}`);
+      if (bookError || !book) {
+        throw new Error(`Không thể cập nhật sách: ${bookError?.message}`);
       }
 
-      // Invalidate cache after update
-      this.cacheService.clearByPattern('books:*');
-      this.cacheService.clearByPattern('dashboard:*');
+      // Cập nhật book_authors relationships nếu có
+      if (updateBookDto.authorIds !== undefined) {
+        // Xóa relationships cũ
+        await this.supabase
+          .from('book_authors')
+          .delete()
+          .eq('book_id', id);
 
-      return this.formatBook(data);
+        // Thêm relationships mới
+        if (updateBookDto.authorIds.length > 0) {
+          const bookAuthors = updateBookDto.authorIds.map(authorId => ({
+            book_id: id,
+            author_id: authorId,
+            role: 'author'
+          }));
+
+          const { error: authorsError } = await this.supabase
+            .from('book_authors')
+            .insert(bookAuthors);
+
+          if (authorsError) {
+            console.error('Error updating book_authors:', authorsError);
+          }
+        }
+      }
+
+      // Cập nhật book_categories relationships nếu có
+      if (updateBookDto.categoryIds !== undefined) {
+        // Xóa relationships cũ
+        await this.supabase
+          .from('book_categories')
+          .delete()
+          .eq('book_id', id);
+
+        // Thêm relationships mới
+        if (updateBookDto.categoryIds.length > 0) {
+          const bookCategories = updateBookDto.categoryIds.map(categoryId => ({
+            book_id: id,
+            category_id: categoryId
+          }));
+
+          const { error: categoriesError } = await this.supabase
+            .from('book_categories')
+            .insert(bookCategories);
+
+          if (categoriesError) {
+            console.error('Error updating book_categories:', categoriesError);
+          }
+        }
+      }
+
+      // Clear cache
+      this.cacheService.clearByPattern('books:*');
+
+      // Return updated book với relationships
+      return this.formatBookWithRelationships(book);
     } catch (error) {
-      throw error;
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Không thể cập nhật sách'
+      );
     }
   }
 
@@ -450,6 +472,10 @@ export class BooksService {
       if (orderItems && orderItems.length > 0) {
         throw new BadRequestException('Không thể xóa sách này vì đã có đơn hàng. Bạn có thể set stock = 0 để ẩn sách thay vì xóa.');
       }
+
+      // Xóa relationships trước
+      await this.supabase.from('book_authors').delete().eq('book_id', id);
+      await this.supabase.from('book_categories').delete().eq('book_id', id);
 
       // Nếu không có order_items, tiến hành xóa
       const { error } = await this.supabase.from('books').delete().eq('id', id);
@@ -566,13 +592,10 @@ export class BooksService {
         .from('books')
         .select('*', { count: 'exact', head: true });
       
-      // Lấy sách có stock thấp với thông tin cần thiết
+      // Lấy sách có stock thấp
       const lowStockQuery = this.supabase
         .from('books')
-        .select(`
-          id, title, stock, price, cover_image,
-          authors!inner(name)
-        `)
+        .select('id, title, stock, price, cover_image')
         .lt('stock', 10)
         .order('stock', { ascending: true })
         .limit(5);
@@ -582,16 +605,32 @@ export class BooksService {
         lowStockQuery
       ]);
 
+      // Format low stock books với author information
+      const formattedLowStockBooks = await Promise.all(
+        (lowStockBooks || []).map(async (book) => {
+          // Get first author for display
+          const { data: bookAuthors } = await this.supabase
+            .from('book_authors')
+            .select(`
+              authors!inner (name)
+            `)
+            .eq('book_id', book.id)
+            .limit(1);
+
+          return {
+            id: book.id,
+            title: book.title,
+            stock: book.stock,
+            price: book.price,
+            coverImage: book.cover_image,
+            authorName: bookAuthors?.[0]?.authors?.name || 'Chưa có tác giả'
+          };
+        })
+      );
+
       return {
         total: totalBooks || 0,
-        lowStockBooks: (lowStockBooks || []).map(book => ({
-          id: book.id,
-          title: book.title,
-          stock: book.stock,
-          price: book.price,
-          coverImage: book.cover_image,
-          authorName: book.authors?.name
-        })),
+        lowStockBooks: formattedLowStockBooks,
       };
     } catch (error) {
       throw new Error(`Lỗi khi lấy thống kê sách: ${error.message}`);

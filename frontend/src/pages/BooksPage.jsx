@@ -196,7 +196,12 @@ export default function BooksPage() {
                       </div>
                       <div className="book-card-content">
                         <h3 className="book-card-title">{book.title}</h3>
-                        <p className="book-card-author">{book.author?.name || "Không xác định"}</p>
+                        <p className="book-card-author">
+                          {book.authors && book.authors.length > 0 
+                            ? book.authors.map(author => author.name).join(', ')
+                            : book.author?.name || "Không xác định"
+                          }
+                        </p>
                         <div className="book-card-categories">
                           {book.categories && book.categories.map((category, index) => (
                             <span key={index} className="book-card-category">

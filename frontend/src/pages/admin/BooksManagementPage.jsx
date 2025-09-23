@@ -30,7 +30,7 @@ export default function BooksManagementPage() {
   // Form state
   const [formData, setFormData] = useState({
     title: '',
-    authorId: '',
+    authors: [], // Thay đổi từ authorId thành authors array
     publisherId: '',
     categories: [],
     description: '',
@@ -396,7 +396,12 @@ export default function BooksManagementPage() {
                       <td>
                         <div className="font-medium">{book.title}</div>
                       </td>
-                      <td>{book.author?.name || 'Chưa có tác giả'}</td>
+                      <td>
+                        {book.authors && book.authors.length > 0 
+                          ? book.authors.map(author => author.name).join(', ')
+                          : book.author?.name || 'Chưa có tác giả'
+                        }
+                      </td>
                       <td>
                         <div className="flex flex-wrap gap-1">
                           {(book.categories || []).map((category) => (

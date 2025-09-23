@@ -32,7 +32,6 @@ export class User {
 
   // Các trường khác có thể cần thiết
   phone?: string;
-  address?: string;
 }
 
 export class CreateUserDto {
@@ -83,9 +82,6 @@ export class UpdateUserDto {
 
   @IsOptional()
   phone?: string;
-  
-  @IsOptional()
-  address?: string;
 }
 
 export class UserResponseDto {
@@ -97,5 +93,4 @@ export class UserResponseDto {
   createdAt: Date;
   updatedAt?: Date; // Made optional since it's not always populated
   phone?: string;
-  address?: string;
 }

@@ -214,7 +214,12 @@ export default function HomePage() {
                     <div className="book-cover-container">
                       {book.discount > 0 && <div className="sale-badge">Giảm giá!</div>}
                       <img src={getBookImage(book)} alt={book.title} className="book-cover-image" />
-                      <div className="book-author">{book.author?.name || book.authorName || "Đang cập nhật"}</div>
+                      <div className="book-author">
+                        {book.authors && book.authors.length > 0 
+                          ? book.authors.map(author => author.name).join(', ')
+                          : book.author?.name || book.authorName || "Đang cập nhật"
+                        }
+                      </div>
                     </div>
                     <div className="book-details">
                       <div className="book-category">{book.category?.name || book.categoryName || "Sách"}</div>

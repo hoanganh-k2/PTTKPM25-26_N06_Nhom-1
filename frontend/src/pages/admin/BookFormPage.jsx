@@ -20,7 +20,7 @@ export default function BookFormPage() {
   
   const [formData, setFormData] = useState({
     title: '',
-    authorId: '',
+    authors: [], // Thay đổi từ authorId thành authors array
     publisherId: '',
     categories: [],
     description: '',
@@ -48,12 +48,12 @@ export default function BookFormPage() {
     try {
       const response = await bookService.getBookById(id);
       
-      // Chuyển đổi dữ liệu để phù hợp với form
+      // Chuyển đổi dữ liệu để phù hợp với form - schema mới với many-to-many
       const bookData = {
         title: response.title || '',
-        authorId: response.authorId || '',
-        publisherId: response.publisherId || '',
-        categories: response.categoryIds || [],
+        authors: response.authors ? response.authors.map(author => author.id) : [], // Array of author IDs
+        publisherId: response.publisher ? response.publisher.id : '',
+        categories: response.categories ? response.categories.map(cat => cat.id) : [], // Array of category IDs
         description: response.description || '',
         price: response.price || '',
         stock: response.stock || '',
@@ -140,11 +140,27 @@ export default function BookFormPage() {
     }
   };
 
+  const handleAuthorChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
+    setFormData({
+      ...formData,
+      authors: selectedOptions
+    });
+    
+    // Clear error
+    if (errors.authors) {
+      setErrors({
+        ...errors,
+        authors: null
+      });
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     
     if (!formData.title) newErrors.title = 'Vui lòng nhập tên sách';
-    if (!formData.authorId) newErrors.authorId = 'Vui lòng chọn tác giả';
+    if (formData.authors.length === 0) newErrors.authors = 'Vui lòng chọn ít nhất một tác giả'; // Thay đổi validation cho authors array
     if (!formData.publisherId) newErrors.publisherId = 'Vui lòng chọn nhà xuất bản';
     if (formData.categories.length === 0) newErrors.categories = 'Vui lòng chọn ít nhất một thể loại';
     
@@ -183,15 +199,15 @@ export default function BookFormPage() {
     
     setSubmitting(true);
     try {
-      // Chuẩn bị dữ liệu để gửi lên API
+      // Chuẩn bị dữ liệu để gửi lên API với schema many-to-many mới
       const apiData = {
         title: formData.title,
         description: formData.description,
         price: Number(formData.price),
         stock: Number(formData.stock),
-        authorId: formData.authorId,
+        authorIds: formData.authors, // Gửi array of author IDs
         publisherId: formData.publisherId,
-        categoryIds: formData.categories,
+        categoryIds: formData.categories, // Array of category IDs
         publishYear: Number(formData.publishYear),
         pageCount: Number(formData.pages) || undefined,
         ISBN: formData.isbn || undefined
@@ -257,27 +273,28 @@ export default function BookFormPage() {
                 </div>
 
                 <div className="admin-form-group">
-                  <label htmlFor="authorId" className="admin-form-label">
+                  <label htmlFor="authors" className="admin-form-label">
                     Tác giả <span className="text-error">*</span>
                   </label>
                   <select
-                    id="authorId"
-                    name="authorId"
-                    value={formData.authorId}
-                    onChange={handleChange}
-                    className={`admin-form-select ${
-                      errors.authorId ? 'border-error' : ''
+                    id="authors"
+                    name="authors"
+                    multiple
+                    value={formData.authors}
+                    onChange={handleAuthorChange}
+                    className={`admin-form-select min-h-[100px] ${
+                      errors.authors ? 'border-error' : ''
                     }`}
                   >
-                    <option value="">-- Chọn tác giả --</option>
                     {authors.map((author) => (
                       <option key={author.id} value={author.id}>
                         {author.name}
                       </option>
                     ))}
                   </select>
-                  {errors.authorId && (
-                    <p className="text-error text-sm mt-1">{errors.authorId}</p>
+                  <p className="text-text-tertiary text-sm mt-1">Giữ Ctrl để chọn nhiều tác giả</p>
+                  {errors.authors && (
+                    <p className="text-error text-sm mt-1">{errors.authors}</p>
                   )}
                 </div>
 

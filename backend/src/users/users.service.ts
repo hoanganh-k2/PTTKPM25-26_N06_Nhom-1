@@ -30,7 +30,6 @@ export class UsersService {
       fullName: user.full_name,
       email: user.email,
       phone: user.phone || null,
-      address: user.address || null,
       role: user.role,
       isAdmin: user.role === UserRole.ADMIN,
       createdAt: new Date(user.created_at),
@@ -172,7 +171,6 @@ export class UsersService {
       };
       if (updateUserDto.fullName !== undefined) updateData.full_name = updateUserDto.fullName.trim();
       if (updateUserDto.phone !== undefined) updateData.phone = updateUserDto.phone?.trim() || null;
-      if (updateUserDto.address !== undefined) updateData.address = updateUserDto.address?.trim() || null;
       // Nếu có email mới và khác email cũ, kiểm tra email đã tồn tại chưa
       if (updateUserDto.email) {
         const { data: currentUser } = await this.supabase

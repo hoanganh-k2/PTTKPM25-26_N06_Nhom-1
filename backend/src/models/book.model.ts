@@ -18,9 +18,7 @@ export class Book {
   stock: number;
 
   // Foreign keys
-  authorId: string;
   publisherId: string;
-  categoryIds?: string[];
 
   // Metadata
   ISBN?: string;
@@ -32,8 +30,8 @@ export class Book {
   createdAt: Date;
   updatedAt: Date;
 
-  // Thông tin liên quan (được thêm từ formatBook)
-  author?: { id: string; name: string };
+  // Many-to-many relationships (populated từ book_authors và book_categories)
+  authors?: { id: string; name: string; role?: string }[];
   publisher?: { id: string; name: string };
   categories?: { id: string; name: string }[];
 }
@@ -53,11 +51,13 @@ export class CreateBookDto {
   stock?: number;
 
   @IsNotEmpty()
-  authorId: string;
-
-  @IsNotEmpty()
   publisherId: string;
 
+  // Arrays cho many-to-many relationships
+  @IsArray()
+  authorIds: string[];
+
+  @IsArray()
   categoryIds?: string[];
 
   ISBN?: string;
@@ -67,7 +67,7 @@ export class CreateBookDto {
   coverImage?: string;
 
   // Cho phép các populated fields từ frontend (sẽ bị ignore)
-  author?: any;
+  authors?: any[];
   publisher?: any; 
   categories?: any[];
 }
@@ -93,11 +93,11 @@ export class UpdateBookDto {
   
   @IsOptional()
   @IsString()
-  authorId?: string;
+  publisherId?: string;
   
   @IsOptional()
-  @IsString()
-  publisherId?: string;
+  @IsArray()
+  authorIds?: string[];
   
   @IsOptional()
   @IsArray()
@@ -125,7 +125,7 @@ export class UpdateBookDto {
 
   // Cho phép các populated fields từ frontend (sẽ bị ignore)
   @IsOptional()
-  author?: any;
+  authors?: any[];
   
   @IsOptional()
   publisher?: any; 

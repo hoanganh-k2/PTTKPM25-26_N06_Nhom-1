@@ -111,7 +111,12 @@ export default function BookDetailPage() {
           <div className="book-meta">
             <div className="meta-item">
               <span className="meta-label">Tác giả:</span>
-              <span className="meta-value">{book.author?.name || "Không xác định"}</span>
+              <span className="meta-value">
+                {book.authors && book.authors.length > 0 
+                  ? book.authors.map(author => author.name).join(', ')
+                  : book.author?.name || "Không xác định"
+                }
+              </span>
             </div>
             <div className="meta-item">
               <span className="meta-label">Nhà xuất bản:</span>
@@ -208,7 +213,17 @@ export default function BookDetailPage() {
 
       <div className="author-info-section">
         <h2>Về tác giả</h2>
-        {book.author ? (
+        {book.authors && book.authors.length > 0 ? (
+          <div className="authors-info">
+            {book.authors.map((author, index) => (
+              <div key={author.id || index} className="author-info">
+                <h3>{author.name}</h3>
+                <p className="author-nationality">Quốc tịch: {author.nationality || "Không xác định"}</p>
+                <p className="author-biography">{author.biography || "Chưa có thông tin."}</p>
+              </div>
+            ))}
+          </div>
+        ) : book.author ? (
           <div className="author-info">
             <h3>{book.author.name}</h3>
             <p className="author-nationality">Quốc tịch: {book.author.nationality || "Không xác định"}</p>

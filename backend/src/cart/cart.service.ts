@@ -23,11 +23,13 @@ export class CartService {
   // Lấy hoặc tạo giỏ hàng cho user với cache
   async getOrCreateCart(userId: string): Promise<CartResponseDto> {
     try {
+      
       // Kiểm tra cache trước
       const cachedCart = this.cacheService.get(userId);
       if (cachedCart) {
         return cachedCart;
       }
+
 
       // First, verify user exists
       const { data: userExists, error: userError } = await this.supabase
@@ -35,6 +37,7 @@ export class CartService {
         .select('id')
         .eq('id', userId)
         .single();
+      
       
       if (userError || !userExists) {
         throw new BadRequestException('User không tồn tại');
