@@ -42,29 +42,7 @@ export default function BooksManagementPage() {
   });
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    fetchBooks();
-  }, [fetchBooks]);
-
-  useEffect(() => {
-    // Load reference data only once
-    fetchCategories();
-    fetchAuthors();
-    fetchPublishers();
-  }, [fetchCategories, fetchAuthors, fetchPublishers]);
-
-  useEffect(() => {
-    // Debounce search
-    const timeoutId = setTimeout(() => {
-      if (searchQuery !== undefined) {
-        setCurrentPage(1);
-      }
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
-
-  // Memoized fetch functions
+  // Memoized fetch functions - moved up to fix hoisting issue
   const fetchBooks = useCallback(async () => {
     setLoading(true);
     try {
@@ -121,7 +99,30 @@ export default function BooksManagementPage() {
     }
   }, []);
 
-  const resetForm = () => {
+  useEffect(() => {
+    fetchBooks();
+  }, [fetchBooks]);
+
+  useEffect(() => {
+    // Load reference data only once
+    fetchCategories();
+    fetchAuthors();
+    fetchPublishers();
+  }, [fetchCategories, fetchAuthors, fetchPublishers]);
+
+  useEffect(() => {
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      if (searchQuery !== undefined) {
+        setCurrentPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // Memoized handlers and utils
+  const resetForm = useCallback(() => {
     setFormData({
       title: '',
       authorId: '',
@@ -135,15 +136,54 @@ export default function BooksManagementPage() {
       isbn: ''
     });
     setErrors({});
-  };
+  }, []);
 
-  const openAddModal = () => {
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  }, [errors]);
+
+  const handleCategoryChange = useCallback((e) => {
+    const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
+    setFormData(prev => ({ ...prev, categories: selectedValues }));
+    if (errors.categories) {
+      setErrors(prev => ({ ...prev, categories: '' }));
+    }
+  }, [errors.categories]);
+
+  const handleFilterCategoryChange = useCallback((e) => {
+    setSelectedCategory(e.target.value);
+    setCurrentPage(1);
+  }, []);
+
+  // Format currency - memoized
+  const formatCurrency = useCallback((value) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(value);
+  }, []);
+
+  // Pagination info - memoized
+  const paginationInfo = useMemo(() => ({
+    currentPage,
+    totalPages,
+    hasNextPage: currentPage < totalPages,
+    hasPrevPage: currentPage > 1,
+    totalItems: totalPages * 10, // approximation
+    displayedItems: books.length
+  }), [currentPage, totalPages, books.length]);
+
+  const openAddModal = useCallback(() => {
     resetForm();
     setEditingBook(null);
     setShowBookModal(true);
-  };
+  }, [resetForm]);
 
-  const openEditModal = (book) => {
+  const openEditModal = useCallback((book) => {
     setFormData({
       title: book.title || '',
       authorId: book.authorId || '',
@@ -159,25 +199,10 @@ export default function BooksManagementPage() {
     setEditingBook(book);
     setErrors({});
     setShowBookModal(true);
-  };
+  }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleCategoryChange = (e) => {
-    const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData(prev => ({ ...prev, categories: selectedValues }));
-    if (errors.categories) {
-      setErrors(prev => ({ ...prev, categories: '' }));
-    }
-  };
-
-  const validateForm = () => {
+  // Validation function
+  const validateForm = useCallback(() => {
     const newErrors = {};
     
     if (!formData.title.trim()) newErrors.title = 'Tên sách là bắt buộc';
@@ -192,9 +217,10 @@ export default function BooksManagementPage() {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData]);
 
-  const handleSubmit = async () => {
+  // Submit form
+  const handleSubmit = useCallback(async () => {
     if (!validateForm()) return;
     
     setSubmitting(true);
@@ -225,25 +251,22 @@ export default function BooksManagementPage() {
       alert(`Có lỗi xảy ra: ${error.message || 'Vui lòng thử lại'}`);
       setSubmitting(false);
     }
-  };
+  }, [validateForm, formData, editingBook, fetchBooks]);
 
-  const handleSearch = (e) => {
+  // Search handler  
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
     setCurrentPage(1);
     fetchBooks();
-  };
+  }, [fetchBooks]);
 
-  const handleFilterCategoryChange = (e) => {
-    setSelectedCategory(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleDeleteClick = (book) => {
+  // Delete handlers
+  const handleDeleteClick = useCallback((book) => {
     setBookToDelete(book);
     setShowDeleteModal(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!bookToDelete) return;
     
     try {
@@ -283,15 +306,7 @@ export default function BooksManagementPage() {
         alert(errorMsg);
       }
     }
-  };
-
-  // Format currency
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(value);
-  };
+  }, [bookToDelete, books, fetchBooks]);
 
   return (
     <div className="admin-container fade-in">

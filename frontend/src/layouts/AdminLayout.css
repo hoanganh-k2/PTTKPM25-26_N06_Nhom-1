@@ -52,6 +52,8 @@
   background: var(--sidebar-bg);
   border: none;
   box-shadow: var(--shadow-md);
+  z-index: 1000; /* Add z-index for proper layering */
+  position: relative;
 }
 
 .admin-sidebar-header {

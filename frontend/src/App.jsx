@@ -7,6 +7,8 @@ import RegisterPage from "./pages/RegisterPage";
 import BookDetailPage from "./pages/BookDetailPage";
 import BooksPage from "./pages/BooksPage";
 import CartPage from "./pages/CartPage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
 import AdminLayout from "./layouts/AdminLayout";
 import MainLayout from "./components/layout/MainLayout";
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -30,9 +32,8 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            {/* Add routes for About and Contact pages when they're created */}
-            <Route path="/about" element={<div className="container mx-auto py-10 px-4"><h1>About Us</h1></div>} />
-            <Route path="/contact" element={<div className="container mx-auto py-10 px-4"><h1>Contact Us</h1></div>} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/books" element={<BooksPage />} />
             <Route path="/books/:id" element={<BookDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
