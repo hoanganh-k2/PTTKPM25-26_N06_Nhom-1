@@ -3,10 +3,27 @@ import { IsEnum, IsNotEmpty, IsNumber, Min } from 'class-validator';
 
 export enum OrderStatus {
   PENDING = 'pending',
+  CONFIRMED = 'confirmed',
   PROCESSING = 'processing',
   SHIPPED = 'shipped',
   DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
+}
+
+export enum PaymentStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
+}
+
+export enum PaymentMethod {
+  CREDIT_CARD = 'credit_card',
+  DEBIT_CARD = 'debit_card',
+  PAYPAL = 'paypal',
+  BANK_TRANSFER = 'bank_transfer',
+  CASH_ON_DELIVERY = 'cash_on_delivery',
 }
 
 export class Order {
@@ -26,8 +43,11 @@ export class Order {
   shippingAddress: Address;
   billingAddress?: Address;
 
-  paymentMethod: string;
-  paymentStatus: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
+  
+  @IsEnum(PaymentStatus)
+  paymentStatus: PaymentStatus;
 
   createdAt: Date;
   updatedAt: Date;
@@ -73,21 +93,15 @@ export class CreateOrderDto {
 
   billingAddress?: Address;
 
+  @IsEnum(PaymentMethod)
   @IsNotEmpty()
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
 }
 
 export class UpdateOrderStatusDto {
   @IsEnum(OrderStatus)
   @IsNotEmpty()
   status: OrderStatus;
-}
-
-export enum PaymentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  FAILED = 'failed',
-  REFUNDED = 'refunded',
 }
 
 export class UpdateOrderDto {
@@ -121,8 +135,8 @@ export class OrderResponseDto implements Omit<Order, 'items'> {
   items: OrderItemResponse[];
   shippingAddress: Address;
   billingAddress?: Address;
-  paymentMethod: string;
-  paymentStatus: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
   createdAt: Date;
   updatedAt: Date;
 }

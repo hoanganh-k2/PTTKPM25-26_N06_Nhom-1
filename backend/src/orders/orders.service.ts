@@ -12,6 +12,7 @@ import {
   OrderResponseDto,
   OrderStatus,
   PaymentStatus,
+  PaymentMethod,
   UpdateOrderDto,
 } from '../models/order.model';
 

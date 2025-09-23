@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export const Modal = ({ 
@@ -47,10 +48,18 @@ export const Modal = ({
     }
   };
 
-  return (
+  return createPortal(
     <div 
       className={`modal fade show ${className}`} 
-      style={{ display: 'block' }}
+      style={{ 
+        display: 'flex',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 9999999
+      }}
       onClick={handleBackdropClick}
     >
       <div className={`modal-dialog ${getSizeClass()}`}>
@@ -75,7 +84,8 @@ export const Modal = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

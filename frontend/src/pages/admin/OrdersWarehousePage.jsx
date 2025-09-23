@@ -112,6 +112,7 @@ export default function OrdersWarehousePage() {
                 className="admin-form-select"
               >
                 <option value="pending">Chờ xử lý</option>
+                <option value="confirmed">Đã xác nhận</option>
                 <option value="processing">Đang xử lý</option>
                 <option value="shipped">Đã giao cho vận chuyển</option>
                 <option value="delivered">Đã giao hàng</option>
@@ -142,6 +143,7 @@ export default function OrdersWarehousePage() {
                     <span>Đơn hàng #{order.id.substring(0, 8)}</span>
                     <span className={`status-indicator ${
                       order.status === 'pending' ? 'status-pending' :
+                      order.status === 'confirmed' ? 'status-confirmed' :
                       order.status === 'processing' ? 'status-processing' :
                       order.status === 'shipped' ? 'status-processing' :
                       order.status === 'delivered' ? 'status-completed' :
@@ -149,6 +151,7 @@ export default function OrdersWarehousePage() {
                     }`}>
                       {
                         order.status === 'pending' ? 'Chờ xử lý' :
+                        order.status === 'confirmed' ? 'Đã xác nhận' :
                         order.status === 'processing' ? 'Đang xử lý' :
                         order.status === 'shipped' ? 'Đã giao cho vận chuyển' :
                         order.status === 'delivered' ? 'Đã giao hàng' :

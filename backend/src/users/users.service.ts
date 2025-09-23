@@ -31,8 +31,8 @@ export class UsersService {
       email: user.email,
       phone: user.phone || null,
       address: user.address || null,
-      role: user.role || (user.is_admin ? 'admin' : 'customer'),
-      isAdmin: user.is_admin,
+      role: user.role,
+      isAdmin: user.role === UserRole.ADMIN,
       createdAt: new Date(user.created_at),
       updatedAt: new Date(user.updated_at),
     };
@@ -132,7 +132,6 @@ export class UsersService {
         full_name: createUserDto.fullName.trim(),
         email: createUserDto.email.trim().toLowerCase(),
         password: hashedPassword,
-        is_admin: createUserDto.role === UserRole.ADMIN,
         role: createUserDto.role || UserRole.CUSTOMER,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -201,7 +200,6 @@ export class UsersService {
       // Cập nhật role nếu được cung cấp
       if (updateUserDto.role !== undefined) {
         updateData.role = updateUserDto.role;
-        updateData.is_admin = updateUserDto.role === UserRole.ADMIN;
       }
       // Cập nhật trong Supabase
       const { data, error } = await this.supabase
