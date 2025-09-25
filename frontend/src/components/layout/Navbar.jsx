@@ -9,7 +9,8 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
-  const { totalItems } = useCart();
+  const cartContext = useCart();
+  const totalItems = cartContext?.totalItems || 0;
 
   const isActive = (path) => {
     return location.pathname === path ? 'active-nav-link' : '';

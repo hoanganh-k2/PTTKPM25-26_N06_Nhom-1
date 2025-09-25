@@ -7,7 +7,26 @@ const CartContext = createContext();
 
 // Custom hook để sử dụng CartContext
 export const useCart = () => {
-  return useContext(CartContext);
+  const context = useContext(CartContext);
+  if (!context) {
+    // Trả về giá trị mặc định nếu không có context
+    console.warn('useCart must be used within a CartProvider');
+    return {
+      cartItems: [],
+      totalItems: 0,
+      totalAmount: 0,
+      loading: false,
+      updating: false,
+      addToCart: () => {},
+      removeFromCart: () => {},
+      updateQuantity: () => {},
+      clearCart: () => {},
+      isInCart: () => false,
+      getItemQuantity: () => 0,
+      loadCart: () => {}
+    };
+  }
+  return context;
 };
 
 export const CartProvider = ({ children }) => {

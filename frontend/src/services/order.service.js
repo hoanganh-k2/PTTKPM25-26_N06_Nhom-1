@@ -5,9 +5,12 @@ const orderService = {
   // Lấy thông tin giỏ hàng
   getCart: async () => {
     try {
+      
       const response = await api.get("/cart");
       
+      
       if (!response || !response.data) {
+        
         return {
           items: [],
           totalItems: 0,
@@ -17,6 +20,8 @@ const orderService = {
       
       return response.data;
     } catch (error) {
+     
+      
       // Return empty cart structure instead of throwing
       return {
         items: [],
