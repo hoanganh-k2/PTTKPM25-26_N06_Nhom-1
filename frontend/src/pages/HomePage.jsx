@@ -62,7 +62,7 @@ export default function HomePage() {
           title: 'Khám phá thế giới sách',
           description: 'Chào mừng bạn đến với cửa hàng sách của chúng tôi. Khám phá những cuốn sách hay nhất từ các tác giả nổi tiếng.',
           author: { name: 'Đang cập nhật' },
-          image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+          coverImage: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
         });
       }
 
@@ -75,7 +75,8 @@ export default function HomePage() {
         id: 'featured-fallback',
         title: 'Khám phá thế giới sách',
         description: 'Chào mừng bạn đến với cửa hàng sách của chúng tôi.',
-        author: { name: 'Đang cập nhật' }
+        author: { name: 'Đang cập nhật' },
+        coverImage: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
       });
     } finally {
       setLoading(false);
@@ -115,13 +116,35 @@ export default function HomePage() {
 
   // Get display image
   const getBookImage = (book) => {
-    return book?.image || book?.coverImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+    // Kiểm tra các trường ảnh có thể có
+    if (book?.coverImage) return book.coverImage;
+    if (book?.cover_image) return book.cover_image;
+    if (book?.image) return book.image;
+    if (book?.thumbnail) return book.thumbnail;
+    
+    // Ảnh mặc định cho sách
+    return 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
   };
 
-  // Get author info
-  const featuredAuthor = authors[0] || {
+  // Danh sách ảnh tác giả mặc định
+  const defaultAuthorImages = [
+    'https://cdn.britannica.com/20/195620-050-9379EDA9/Murakami-Haruki-2012.jpg',
+  ];
+
+  // Get author info với ảnh tự động
+  const getAuthorImage = (author, index = 0) => {
+    if (author?.image || author?.avatar || author?.photo) {
+      return author.image || author.avatar || author.photo;
+    }
+    return defaultAuthorImages[index % defaultAuthorImages.length];
+  };
+
+  const featuredAuthor = authors[0] ? {
+    ...authors[0],
+    image: getAuthorImage(authors[0], 0)
+  } : {
     name: "Đang cập nhật",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    image: defaultAuthorImages[0],
     bio: "Thông tin tác giả đang được cập nhật..."
   };
 
@@ -169,15 +192,22 @@ export default function HomePage() {
               </div>
             </div>
             <div className="hero-image">
-              <div className="book-cover">
-                <div className="author-name">{featuredBook?.author?.name || featuredBook?.authorName || "Đang cập nhật"}</div>
-                <div className="book-title">
-                  <div>{featuredBook?.title || "Đang tải..."}</div>
-                </div>
-                <div className="book-description">
-                  {featuredBook?.description || "Khám phá những cuốn sách hay nhất"}
-                </div>
-                <div className="book-badge">Sách nổi bật</div>
+              <div className="book-cover" style={{
+                backgroundImage: `url(${getBookImage(featuredBook)})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              }}>
+                {/* <div className="book-overlay">
+                  <div className="author-name">{featuredBook?.author?.name || featuredBook?.authorName || "Đang cập nhật"}</div>
+                  <div className="book-title">
+                    <div>{featuredBook?.title || "Đang tải..."}</div>
+                  </div>
+                  <div className="book-description">
+                    {featuredBook?.description || "Khám phá những cuốn sách hay nhất"}
+                  </div>
+                  <div className="book-badge">Sách nổi bật</div>
+                </div> */}
               </div>
             </div>
           </section>
@@ -185,12 +215,14 @@ export default function HomePage() {
           {/* Author Biography */}
           <section className="author-section">
             <div className="author-image">
-              <img src={featuredAuthor.image} alt={featuredAuthor.name} />
+              <img src={"https://cdn.britannica.com/20/195620-050-9379EDA9/Murakami-Haruki-2012.jpg"}  alt={featuredAuthor.name} />
             </div>
             <div className="author-content">
               <div className="biography-label">TIỂU SỬ TÁC GIẢ</div>
-              <h2>{featuredAuthor.name}</h2>
-              <p>{featuredAuthor.bio}</p>
+              {/* <h2>{featuredAuthor.name}</h2>
+              <p>{featuredAuthor.bio}</p> */}
+              <h2>Haruki Murakami</h2>
+              <p>Nhà văn Nhật Bản hiện đại</p>
               <p>
                 Một trong những tác giả được yêu thích nhất với nhiều tác phẩm 
                 nổi tiếng và được độc giả đón nhận một cách nhiệt tình.

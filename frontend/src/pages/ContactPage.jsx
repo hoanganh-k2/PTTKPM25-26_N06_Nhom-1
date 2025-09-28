@@ -129,16 +129,7 @@ export default function ContactPage() {
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-
-              {/* Map placeholder */}
-              <div className="map-container">
-                <div className="map-placeholder">
-                  <MapPin className="w-12 h-12" />
-                  <p>Bản đồ vị trí cửa hàng</p>
-                  <small>123 Đường Sách, Quận 1, TP.HCM</small>
-                </div>
-              </div>
+              </div>  
             </div>
 
             {/* Contact Form */}

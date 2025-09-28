@@ -15,7 +15,7 @@ export default function InventoryManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [lowStockFilter, setLowStockFilter] = useState(10); // Mặc định hiển thị các sản phẩm có tồn kho dưới 10
+  const [lowStockFilter, setLowStockFilter] = useState(50); // Mặc định hiển thị các sản phẩm có tồn kho dưới 10
   
   // Modal states
   const [showStockModal, setShowStockModal] = useState(false);

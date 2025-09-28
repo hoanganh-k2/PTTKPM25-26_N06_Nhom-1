@@ -25,6 +25,7 @@
 }
 
 .hero-content p {
+  color:white;
   font-size: 1.2rem;
   opacity: 0.9;
   max-width: 600px;
@@ -63,6 +64,7 @@
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
+  padding: 20px 10px;
 }
 
 .info-card:hover {
@@ -96,43 +98,12 @@
   white-space: pre-line;
 }
 
-/* Map */
-.map-container {
-  background: white;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.map-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  text-align: center;
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.map-placeholder .w-12 {
-  margin-bottom: 1rem;
-  color: #6366f1;
-}
-
-.map-placeholder p {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.map-placeholder small {
-  font-size: 0.875rem;
-}
-
 /* Contact Form */
 .contact-form-card {
   border: none;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding:20px 10px;
+  border-radius:10px
 }
 
 .form-header {
@@ -221,6 +192,7 @@
   border-radius: 0.375rem;
   font-size: 0.9rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  /* width:200px; */
 }
 
 .form-group input:focus,

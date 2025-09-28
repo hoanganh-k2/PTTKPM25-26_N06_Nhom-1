@@ -112,14 +112,25 @@
 }
 
 .book-cover {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.book-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   color: white;
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 100%;
-  width: 100%;
-  background: rgba(0, 0, 0, 0.4);
   padding: 40px;
   border-radius: 8px;
 }
@@ -178,7 +189,7 @@
 .author-image img {
   width: 100%;
   border-radius: 8px;
-  height: 400px;
+  height: 500px;
   object-fit: cover;
 }
 
