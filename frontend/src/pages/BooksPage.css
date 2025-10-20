@@ -70,6 +70,25 @@
   background-color: white;
 }
 
+.checkbox-group {
+  margin-top: 0.5rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.checkbox-item label {
+  margin-bottom: 0;
+  font-weight: normal;
+}
+
 .books-grid-container {
   flex: 1;
 }
@@ -124,6 +143,27 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.book-card-badge {
+  position: absolute;
+  right: 8px;
+  padding: 6px 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  z-index: 3;
+}
+
+.book-card-badge.new-book {
+  top: 8px;
+  background: #2563eb; /* blue */
+}
+
+.book-card-badge.popular-book {
+  top: 42px;
+  background: #f43f5e; /* pink/red */
 }
 
 .book-card-content {

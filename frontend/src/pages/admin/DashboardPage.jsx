@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { BookOpen, PackageCheck, Users, TrendingUp, RefreshCw, LayoutDashboard } from 'lucide-react';
+import { BookOpen, PackageCheck, Users, TrendingUp, RefreshCw, LayoutDashboard, AlertTriangle, Box } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import dashboardService from '../../services/dashboard.service';
 import './AdminPages.css';
@@ -219,6 +219,64 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Low Stock Warning Card */}
+      <div className="dashboard-section mt-6">
+        <div className="dashboard-section-header">
+          <h3 className="dashboard-section-title">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
+            Cảnh báo tồn kho thấp
+          </h3>
+          <span className="dashboard-section-badge">
+            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : stats.lowStockBooks.length}
+          </span>
+        </div>
+
+        <div className="dashboard-low-stock-container">
+          {loading ? (
+            <div className="dashboard-loading-state">
+              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+              <p>Đang tải dữ liệu...</p>
+            </div>
+          ) : stats.lowStockBooks.length === 0 ? (
+            <div className="dashboard-empty-state">
+              <Box className="h-12 w-12 text-gray-300" />
+              <p>Không có sách nào tồn kho thấp</p>
+            </div>
+          ) : (
+            <div className="dashboard-low-stock-list">
+              {stats.lowStockBooks.map((book) => (
+                <div key={book.id} className="dashboard-low-stock-item">
+                  <div className="dashboard-low-stock-image">
+                    <img 
+                      src={book.coverImage || "/assets/book-placeholder.png"} 
+                      alt={book.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/assets/book-placeholder.png";
+                      }}
+                    />
+                  </div>
+                  <div className="dashboard-low-stock-info">
+                    <h4 className="dashboard-low-stock-title">{book.title}</h4>
+                    <div className="dashboard-low-stock-meta">
+                      <span className="dashboard-low-stock-author">{book.author?.name || 'Không có tác giả'}</span>
+                      <span className="dashboard-low-stock-price">
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price || 0)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="dashboard-low-stock-count">
+                    <span className={`stock-badge ${book.stock <= 5 ? 'critical' : 'warning'}`}>
+                      {book.stock} cuốn
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

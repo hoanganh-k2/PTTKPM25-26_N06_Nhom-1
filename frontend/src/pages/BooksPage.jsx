@@ -17,6 +17,8 @@ export default function BooksPage() {
     sortOrder: "asc",
     page: 1,
     limit: 12,
+    isNew: false,      // Lọc sách mới (tạo trong 30 ngày qua)
+    isPopular: false,  // Lọc sách được yêu thích (tồn kho thấp < 10)
   });
 
   // States for filter options
@@ -29,9 +31,32 @@ export default function BooksPage() {
   const fetchBooks = useCallback(async (currentFilters) => {
     try {
       setLoading(true);
-      const response = await bookService.getAllBooks(currentFilters);
-      setBooks(response.books);
-      setTotalBooks(response.total);
+      // Tạo bản sao của filters để gửi đến API
+      const apiFilters = { ...currentFilters };
+      
+      // Xóa các filter đặc biệt (isNew và isPopular) vì chúng sẽ được xử lý riêng ở frontend
+      delete apiFilters.isNew;
+      delete apiFilters.isPopular;
+      
+      const response = await bookService.getAllBooks(apiFilters);
+      let filteredBooks = response.books;
+      
+      // Lọc sách mới (tạo trong vòng 30 ngày)
+      if (currentFilters.isNew) {
+        filteredBooks = filteredBooks.filter(book => 
+          book.createdAt && new Date(book.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        );
+      }
+      
+      // Lọc sách được yêu thích (tồn kho thấp < 10)
+      if (currentFilters.isPopular) {
+        filteredBooks = filteredBooks.filter(book => 
+          book.stock > 0 && book.stock < 10
+        );
+      }
+      
+      setBooks(filteredBooks);
+      setTotalBooks(currentFilters.isNew || currentFilters.isPopular ? filteredBooks.length : response.total);
       setError(null);
     } catch (err) {
       setError(err.message || "Không thể tải danh sách sách");
@@ -173,6 +198,36 @@ export default function BooksPage() {
                 <option value="publishYear-desc">Mới nhất</option>
               </select>
             </div>
+
+            <div className="filter-group">
+              <label>Trạng thái</label>
+              <div className="checkbox-group">
+                <div className="checkbox-item">
+                  <input 
+                    type="checkbox" 
+                    id="isNew" 
+                    name="isNew"
+                    checked={filters.isNew}
+                    onChange={(e) => handleFilterChange({
+                      target: { name: 'isNew', value: e.target.checked }
+                    })}
+                  />
+                  <label htmlFor="isNew">Sách mới</label>
+                </div>
+                <div className="checkbox-item">
+                  <input 
+                    type="checkbox" 
+                    id="isPopular" 
+                    name="isPopular"
+                    checked={filters.isPopular}
+                    onChange={(e) => handleFilterChange({
+                      target: { name: 'isPopular', value: e.target.checked }
+                    })}
+                  />
+                  <label htmlFor="isPopular">Sách được yêu thích</label>
+                </div>
+              </div>
+            </div>
           </div>
         </aside>
         
@@ -202,6 +257,14 @@ export default function BooksPage() {
                           alt={book.title}
                           className="book-card-image"
                         />
+                        {/* Hiển thị nhãn sách mới nếu sách được tạo trong vòng 30 ngày */}
+                        {book.createdAt && new Date(book.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) && (
+                          <div className="book-card-badge new-book">Sách mới</div>
+                        )}
+                        {/* Hiển thị nhãn sách được yêu thích nếu tồn kho thấp (ít hơn 10 cuốn) */}
+                        {book.stock > 0 && book.stock < 10 && (
+                          <div className="book-card-badge popular-book">Sách được yêu thích</div>
+                        )}
                       </div>
                       <div className="book-card-content">
                         <h3 className="book-card-title">{book.title}</h3>

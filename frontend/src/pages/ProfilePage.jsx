@@ -23,34 +23,72 @@ export default function ProfilePage() {
     fetchUserOrders();
   }, [user, navigate]);
 
-  const fetchUserOrders = async () => {
+  const fetchUserOrders = async (isRefresh = false) => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await orderService.getUserOrders();
-      
-      
-      // Backend trả về {orders: [], total: number, page: number, totalPages: number}
-      let orderData = [];
-      if (response && response.orders) {
-        orderData = response.orders;
-      } else if (response && response.data && response.data.orders) {
-        orderData = response.data.orders;
-      } else if (response && Array.isArray(response.data)) {
-        orderData = response.data;
-      } else if (Array.isArray(response)) {
-        orderData = response;
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
       }
+      setError(null);
       
-      console.log('Processed order data:', orderData);
-      setOrders(orderData);
+      try {
+        // Gọi API thực
+        const response = await orderService.getUserOrders();
+        console.log('Order API response:', response);
+        
+        // Xử lý dữ liệu từ API
+        let orderData = [];
+        if (response && response.orders) {
+          orderData = response.orders;
+        } else if (response && response.data && response.data.orders) {
+          orderData = response.data.orders;
+        } else if (response && Array.isArray(response.data)) {
+          orderData = response.data;
+        } else if (Array.isArray(response)) {
+          orderData = response;
+        }
+        
+        if (orderData && orderData.length > 0) {
+          console.log('Đã lấy được dữ liệu từ API:', orderData);
+          
+          // Lấy thông tin chi tiết sách cho mỗi item (bao gồm hình ảnh)
+          for (const order of orderData) {
+            if (order.items && order.items.length > 0) {
+              for (const item of order.items) {
+                try {
+                  // Lấy thông tin sách từ API books
+                  const bookResponse = await fetch(`http://localhost:3000/api/books/${item.bookId}`);
+                  if (bookResponse.ok) {
+                    const bookData = await bookResponse.json();
+                    // Thêm thông tin hình ảnh và tác giả vào item
+                    item.coverImage = bookData.coverImage || bookData.cover_image;
+                    item.bookAuthor = bookData.author?.name || item.bookAuthor;
+                  }
+                } catch (err) {
+                  console.warn(`Không thể lấy thông tin sách ${item.bookId}:`, err);
+                }
+              }
+            }
+          }
+          
+          setOrders(orderData);
+        } else {
+          console.log('API trả về dữ liệu trống');
+          setOrders([]);
+        }
+      } catch (apiError) {
+        console.warn('Lỗi khi gọi API:', apiError);
+        setError('Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.');
+        setOrders([]);
+      }
     } catch (error) {
       console.error('Lỗi khi lấy danh sách đơn hàng:', error);
-      console.error('Error response:', error.response);
       setError(error.message || 'Có lỗi xảy ra khi lấy danh sách đơn hàng');
       setOrders([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -101,6 +139,21 @@ export default function ProfilePage() {
       paypal: 'PayPal'
     };
     return methodMap[method] || method;
+  };
+  
+  // Get book image function - lấy ảnh giống CartPage
+  const getBookImage = (book) => {
+    if (!book) return "/assets/book-placeholder.png";
+    
+    // Ưu tiên sử dụng coverImage như CartPage
+    if (book.coverImage) return book.coverImage;
+    if (book.cover_image) return book.cover_image;
+    if (book.image) return book.image;
+    if (book.thumbnail) return book.thumbnail;
+    if (book.bookImage) return book.bookImage;
+    
+    // Fallback về placeholder
+    return "/assets/book-placeholder.png";
   };
 
   if (!user) {
@@ -230,64 +283,92 @@ export default function ProfilePage() {
               ) : (
                 <div className="orders-list fade-in">
                   {orders.map((order) => (
-                    <div key={order.id} className="order-card">
+                    <div key={order.id} className="order-card shopee-style">
                       <div className="order-header">
-                        <div className="order-id">
-                          <strong>Đơn hàng #{order.id}</strong>
-                          <span className="order-date">{formatDate(order.createdAt)}</span>
+                        <div className="shop-info">
+                          <span className="shop-name">BookStore</span>
+                          <button className="btn-chat">Chat</button>
                         </div>
-                        <div className="order-status">
-                          {getStatusBadge(order.status)}
-                          {getPaymentStatusBadge(order.paymentStatus)}
+                        <div className="order-status-container">
+                          <div className="order-status-icon">
+                            {order.status === 'delivered' && <span className="status-icon delivered">✓</span>}
+                            {order.status === 'pending' && <span className="status-icon pending">⏱</span>}
+                            {order.status === 'cancelled' && <span className="status-icon cancelled">✗</span>}
+                          </div>
+                          <div className="order-status-text">
+                            <span className="order-status-label">
+                              {getStatusBadge(order.status)}
+                            </span>
+                            <span className="order-payment-status">
+                              {getPaymentStatusBadge(order.paymentStatus)}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="order-details">
-                        <div className="order-items">
-                          <h4>Sản phẩm:</h4>
-                          {order.items && order.items.map((item, index) => (
-                            <div key={index} className="order-item">
-                              <span className="item-title">{item.bookTitle}</span>
-                              <span className="item-quantity">x{item.quantity}</span>
-                              <span className="item-price">{item.price?.toLocaleString('vi-VN')} ₫</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="order-info">
-                          <div className="order-address">
-                            <strong>Địa chỉ giao hàng:</strong>
-                            <p>{order.shippingAddress?.fullName}</p>
-                            <p>{order.shippingAddress?.phone}</p>
-                            <p>{order.shippingAddress?.address}</p>
+                      {order.items && order.items.map((item, index) => (
+                        <div key={index} className="order-product">
+                          <div className="product-image">
+                            <img 
+                              src={getBookImage(item)} 
+                              onError={(e) => {
+                                e.target.onerror = null; 
+                                e.target.src = "/assets/book-placeholder.png";
+                              }}
+                              alt={item.bookTitle || "Sách"} 
+                              loading="lazy"
+                            />
                           </div>
-                          
-                          <div className="order-payment">
-                            <strong>Phương thức thanh toán:</strong>
-                            <p>{getPaymentMethodText(order.paymentMethod)}</p>
+                          <div className="product-info">
+                            <div className="product-name">{item.bookTitle}</div>
+                            <div className="product-variation">Tác giả: {item.bookAuthor || "Đang cập nhật"}</div>
+                            <div className="product-quantity">x{item.quantity}</div>
+                          </div>
+                          <div className="product-price">
+                            <div className="original-price">{(item.price * 1.2)?.toLocaleString('vi-VN')}₫</div>
+                            <div className="actual-price">{item.price?.toLocaleString('vi-VN')}₫</div>
                           </div>
                         </div>
+                      ))}
 
-                        <div className="order-total">
-                          <strong>Tổng tiền: {order.totalAmount?.toLocaleString('vi-VN')} ₫</strong>
+                      <div className="order-footer">
+                        <div className="order-total-container">
+                          <div className="order-date-info">
+                            <span className="order-id">Đơn hàng #{order.id}</span>
+                            <span className="order-date">{formatDate(order.createdAt)}</span>
+                          </div>
+                          <div className="total-section">
+                            <span className="total-label">Thành tiền:</span>
+                            <span className="total-amount">{order.totalAmount?.toLocaleString('vi-VN')}₫</span>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="order-actions">
-                        <button 
-                          className="btn-secondary"
-                          onClick={() => navigate(`/orders/${order.id}`)}
-                        >
-                          Xem chi tiết
-                        </button>
-                        {order.status === 'pending' && (
+                        
+                        <div className="order-actions shopee-style">
                           <button 
-                            className="btn-danger"
-                            onClick={() => alert('Chức năng hủy đơn hàng sẽ được phát triển sau')}
+                            className="btn-order-detail"
+                            onClick={() => navigate(`/orders/${order.id}`)}
                           >
-                            Hủy đơn hàng
+                            Xem chi tiết
                           </button>
-                        )}
+                          {order.status === 'delivered' && (
+                            <button className="btn-buy-again">
+                              Mua lại
+                            </button>
+                          )}
+                          {order.status === 'pending' && (
+                            <button 
+                              className="btn-cancel-order"
+                              onClick={() => alert('Chức năng hủy đơn hàng sẽ được phát triển sau')}
+                            >
+                              Hủy đơn hàng
+                            </button>
+                          )}
+                          {order.status === 'delivered' && !order.isReviewed && (
+                            <button className="btn-review">
+                              Đánh giá
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

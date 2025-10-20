@@ -245,6 +245,14 @@ export default function HomePage() {
                   <Link to={`/books/${book.id}`} className="book-link">
                     <div className="book-cover-container">
                       {book.discount > 0 && <div className="sale-badge">Giảm giá!</div>}
+                      {/* Hiển thị nhãn sách mới nếu sách được tạo trong vòng 30 ngày */}
+                      {book.createdAt && new Date(book.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) && (
+                        <div className="new-book-badge">Sách mới</div>
+                      )}
+                      {/* Hiển thị nhãn sách được yêu thích nếu tồn kho thấp (ít hơn 10 cuốn) */}
+                      {book.stock > 0 && book.stock < 10 && (
+                        <div className="popular-book-badge">Sách được yêu thích</div>
+                      )}
                       <img src={getBookImage(book)} alt={book.title} className="book-cover-image" />
                       <div className="book-author">
                         {book.authors && book.authors.length > 0 
@@ -274,6 +282,68 @@ export default function HomePage() {
               )) : (
                 <div className="no-books-message">
                   <p>Hiện tại chưa có sách nào trong danh sách bán chạy.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="see-all-books">
+              <Link to="/books">
+                <Button variant="outline" className="shop-all-btn">Xem tất cả sách</Button>
+              </Link>
+            </div>
+          </section>
+
+          {/* Latest Books Section */}
+          <section className="latest-books-section">
+            <h2>Sách mới nhất</h2>
+            <p className="section-description">
+              Khám phá những cuốn sách mới nhất vừa được cập nhật, được chọn lọc từ các tác giả nổi tiếng
+              và các nhà xuất bản uy tín.
+            </p>
+            
+            <div className="books-grid">
+              {latestBooks.length > 0 ? latestBooks.map(book => (
+                <div key={book.id} className="book-item">
+                  <Link to={`/books/${book.id}`} className="book-link">
+                    <div className="book-cover-container">
+                      {book.discount > 0 && <div className="sale-badge">Giảm giá!</div>}
+                      {/* Hiển thị nhãn sách mới nếu sách được tạo trong vòng 30 ngày */}
+                      {book.createdAt && new Date(book.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) && (
+                        <div className="new-book-badge">Sách mới</div>
+                      )}
+                      {/* Hiển thị nhãn sách được yêu thích nếu tồn kho thấp (ít hơn 10 cuốn) */}
+                      {book.stock > 0 && book.stock < 10 && (
+                        <div className="popular-book-badge">Sách được yêu thích</div>
+                      )}
+                      <img src={getBookImage(book)} alt={book.title} className="book-cover-image" />
+                      <div className="book-author">
+                        {book.authors && book.authors.length > 0 
+                          ? book.authors.map(author => author.name).join(', ')
+                          : book.author?.name || book.authorName || "Đang cập nhật"
+                        }
+                      </div>
+                    </div>
+                    <div className="book-details">
+                      <div className="book-category">{book.category?.name || book.categoryName || "Sách"}</div>
+                      <h3 className="book-title">{book.title}</h3>
+                      <div className="book-price">
+                        {book.discount > 0 ? (
+                          <>
+                            <span className="original-price">
+                              {formatPrice(book.originalPrice || (book.price * 100 / (100 - book.discount)))}
+                            </span>
+                            <span className="sale-price">{formatPrice(book.price)}</span>
+                          </>
+                        ) : (
+                          <span className="regular-price">{formatPrice(book.price)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              )) : (
+                <div className="no-books-message">
+                  <p>Hiện tại chưa có sách mới.</p>
                 </div>
               )}
             </div>

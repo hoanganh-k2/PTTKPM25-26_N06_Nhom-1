@@ -113,6 +113,14 @@ export default function BookDetailPage() {
             alt={book.title}
             className="book-cover-image"
           />
+          {/* Hiển thị nhãn sách mới nếu sách được tạo trong vòng 30 ngày */}
+          {new Date(book.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) && (
+            <div className="book-badge new-book">Sách mới</div>
+          )}
+          {/* Hiển thị nhãn sách được yêu thích nếu tồn kho thấp (ít hơn 10 cuốn) */}
+          {book.stock > 0 && book.stock < 10 && (
+            <div className="book-badge popular-book">Sách được yêu thích</div>
+          )}
         </div>
 
         <div className="book-info">
