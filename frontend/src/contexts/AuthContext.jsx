@@ -39,6 +39,10 @@ export const AuthProvider = ({ children }) => {
     // Giỏ hàng giờ được lưu trên server, không cần xóa localStorage
   };
 
+  const updateUser = (updatedUser) => {
+    setCurrentUser(updatedUser);
+  };
+
   // Kiểm tra vai trò người dùng
   const isAdmin = currentUser?.isAdmin || currentUser?.role === 'admin';
   const isWarehouseManager = currentUser?.role === 'warehouse_manager';
@@ -53,6 +57,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateUser,
   };
 
   return (

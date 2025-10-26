@@ -149,4 +149,100 @@ export class AuthService {
       throw new UnauthorizedException('Token không hợp lệ');
     }
   }
+
+  // Cập nhật thông tin profile
+  async updateProfile(
+    userId: string,
+    updateData: any,
+  ): Promise<{ success: boolean; message: string; user: UserResponseDto }> {
+    try {
+      // Chuẩn bị dữ liệu cập nhật
+      const updateFields: any = {
+        updated_at: new Date().toISOString(),
+      };
+
+      // Cập nhật tên nếu có
+      if (updateData.fullName !== undefined) {
+        updateFields.full_name = updateData.fullName;
+      }
+
+      // Cập nhật email nếu có (kiểm tra trùng lặp)
+      if (updateData.email !== undefined) {
+        const { data: existingUser } = await this.supabase
+          .from('users')
+          .select('id')
+          .eq('email', updateData.email)
+          .neq('id', userId)
+          .single();
+
+        if (existingUser) {
+          throw new Error('Email này đã được sử dụng bởi tài khoản khác');
+        }
+
+        updateFields.email = updateData.email;
+      }
+
+      // Cập nhật số điện thoại nếu có
+      if (updateData.phone !== undefined) {
+        updateFields.phone = updateData.phone || null;
+      }
+
+      // Cập nhật mật khẩu nếu có
+      if (updateData.newPassword && updateData.currentPassword) {
+        // Lấy thông tin user hiện tại để kiểm tra mật khẩu cũ
+        const { data: currentUser } = await this.supabase
+          .from('users')
+          .select('password')
+          .eq('id', userId)
+          .single();
+
+        if (!currentUser) {
+          throw new Error('User không tồn tại');
+        }
+
+        // Kiểm tra mật khẩu hiện tại
+        const isCurrentPasswordValid = await bcrypt.compare(
+          updateData.currentPassword,
+          currentUser.password,
+        );
+
+        if (!isCurrentPasswordValid) {
+          throw new Error('Mật khẩu hiện tại không đúng');
+        }
+
+        // Hash mật khẩu mới
+        updateFields.password = await bcrypt.hash(updateData.newPassword, 10);
+      }
+
+      // Cập nhật trong database
+      const { data: updatedUser, error } = await this.supabase
+        .from('users')
+        .update(updateFields)
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Cập nhật thất bại: ${error.message}`);
+      }
+
+      // Trả về thông tin user đã cập nhật
+      return {
+        success: true,
+        message: 'Cập nhật thông tin thành công',
+        user: {
+          id: updatedUser.id,
+          fullName: updatedUser.full_name,
+          email: updatedUser.email,
+          isAdmin: updatedUser.role === 'admin',
+          role: updatedUser.role || 'customer',
+          createdAt: new Date(updatedUser.created_at),
+          updatedAt: updatedUser.updated_at ? new Date(updatedUser.updated_at) : undefined,
+          phone: updatedUser.phone,
+        },
+      };
+    } catch (error) {
+      throw new Error(error.message || 'Có lỗi xảy ra khi cập nhật thông tin');
+    }
+  }
 }

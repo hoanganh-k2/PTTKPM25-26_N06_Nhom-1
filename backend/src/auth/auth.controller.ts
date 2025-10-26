@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -34,5 +35,14 @@ export class AuthController {
   async getProfile(@Request() req): Promise<UserResponseDto> {
     // req.user được thêm bởi JwtAuthGuard
     return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('profile')
+  async updateProfile(
+    @Request() req,
+    @Body() updateData: any,
+  ): Promise<{ success: boolean; message: string; user: UserResponseDto }> {
+    return this.authService.updateProfile(req.user.id, updateData);
   }
 }

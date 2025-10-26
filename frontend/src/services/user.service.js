@@ -112,6 +112,34 @@ const userService = {
         }
       );
     }
+  },
+
+  // Cập nhật thông tin cá nhân (User tự cập nhật)
+  updateProfile: async (profileData) => {
+    try {
+      const response = await api.put("/auth/profile", profileData);
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi cập nhật thông tin cá nhân",
+        }
+      );
+    }
+  },
+
+  // Lấy thông tin profile hiện tại (User)
+  getCurrentProfile: async () => {
+    try {
+      const response = await api.get("/auth/profile");
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Có lỗi xảy ra khi lấy thông tin cá nhân",
+        }
+      );
+    }
   }
 };
 

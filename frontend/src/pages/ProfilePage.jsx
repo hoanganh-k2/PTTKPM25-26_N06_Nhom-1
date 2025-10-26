@@ -2,16 +2,30 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import orderService from '../services/order.service';
+import userService from '../services/user.service';
 import './ProfilePage.css';
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('info'); // 'info' hoặc 'orders'
+  
+  // States for update profile modal
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateFormData, setUpdateFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [updateErrors, setUpdateErrors] = useState({});
 
   useEffect(() => {
     console.log('ProfilePage useEffect - user:', user);
@@ -156,6 +170,127 @@ export default function ProfilePage() {
     return "/assets/book-placeholder.png";
   };
 
+  // Functions for updating profile
+  const openUpdateModal = () => {
+    setUpdateFormData({
+      fullName: user.fullName || user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setUpdateErrors({});
+    setShowUpdateModal(true);
+  };
+
+  const closeUpdateModal = () => {
+    setShowUpdateModal(false);
+    setUpdateFormData({
+      fullName: '',
+      email: '',
+      phone: '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setUpdateErrors({});
+  };
+
+  const handleUpdateFormChange = (e) => {
+    const { name, value } = e.target;
+    setUpdateFormData({
+      ...updateFormData,
+      [name]: value
+    });
+    
+    // Clear error when field is edited
+    if (updateErrors[name]) {
+      setUpdateErrors({
+        ...updateErrors,
+        [name]: ''
+      });
+    }
+  };
+
+  const validateUpdateForm = () => {
+    const newErrors = {};
+    
+    if (!updateFormData.fullName.trim()) {
+      newErrors.fullName = 'Tên không được để trống';
+    }
+    
+    if (!updateFormData.email.trim()) {
+      newErrors.email = 'Email không được để trống';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updateFormData.email)) {
+      newErrors.email = 'Email không hợp lệ';
+    }
+    
+    // Validate phone if provided
+    if (updateFormData.phone && !/^[0-9]{10,11}$/.test(updateFormData.phone)) {
+      newErrors.phone = 'Số điện thoại phải có 10-11 chữ số';
+    }
+    
+    // Validate password if user wants to change it
+    if (updateFormData.newPassword) {
+      if (!updateFormData.currentPassword) {
+        newErrors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại';
+      }
+      if (updateFormData.newPassword.length < 6) {
+        newErrors.newPassword = 'Mật khẩu mới phải có ít nhất 6 ký tự';
+      }
+      if (updateFormData.newPassword !== updateFormData.confirmPassword) {
+        newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+      }
+    }
+    
+    setUpdateErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!validateUpdateForm()) {
+      return;
+    }
+    
+    setUpdating(true);
+    try {
+      const updateData = {
+        fullName: updateFormData.fullName,
+        email: updateFormData.email,
+        phone: updateFormData.phone || null
+      };
+      
+      // Add password fields if user wants to change password
+      if (updateFormData.newPassword) {
+        updateData.currentPassword = updateFormData.currentPassword;
+        updateData.newPassword = updateFormData.newPassword;
+      }
+      
+      // Call API to update profile
+      const response = await userService.updateProfile(updateData);
+      
+      if (response && response.success) {
+        // Update user context with new data
+        updateUser(response.user);
+        
+        alert('Cập nhật thông tin thành công!');
+        closeUpdateModal();
+      } else {
+        throw new Error(response?.message || 'Có lỗi xảy ra khi cập nhật thông tin');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      if (error.response?.data?.message) {
+        alert(`Lỗi: ${error.response.data.message}`);
+      } else {
+        alert(error.message || 'Có lỗi xảy ra khi cập nhật thông tin');
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -215,7 +350,7 @@ export default function ProfilePage() {
                 </div>
                 
                 <div className="profile-actions">
-                  <button className="btn-secondary" onClick={() => alert('Chức năng cập nhật thông tin sẽ được phát triển sau')}>
+                  <button className="btn-secondary" onClick={openUpdateModal}>
                     Cập nhật thông tin
                   </button>
                   <button className="btn-danger" onClick={logout}>
@@ -378,6 +513,136 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Update Profile Modal */}
+      {showUpdateModal && (
+        <div className="modal-overlay" onClick={closeUpdateModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Cập nhật thông tin cá nhân</h3>
+              <button className="modal-close" onClick={closeUpdateModal}>
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="form-label">
+                  Họ và tên <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={updateFormData.fullName}
+                  onChange={handleUpdateFormChange}
+                  className={`form-control ${updateErrors.fullName ? 'is-invalid' : ''}`}
+                  placeholder="Nhập họ và tên"
+                />
+                {updateErrors.fullName && (
+                  <div className="invalid-feedback">{updateErrors.fullName}</div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Email <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={updateFormData.email}
+                  onChange={handleUpdateFormChange}
+                  className={`form-control ${updateErrors.email ? 'is-invalid' : ''}`}
+                  placeholder="Nhập email"
+                />
+                {updateErrors.email && (
+                  <div className="invalid-feedback">{updateErrors.email}</div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Số điện thoại</label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={updateFormData.phone}
+                  onChange={handleUpdateFormChange}
+                  className={`form-control ${updateErrors.phone ? 'is-invalid' : ''}`}
+                  placeholder="Nhập số điện thoại (tùy chọn)"
+                />
+                {updateErrors.phone && (
+                  <div className="invalid-feedback">{updateErrors.phone}</div>
+                )}
+              </div>
+
+              <hr style={{ margin: '20px 0' }} />
+              <h4 style={{ marginBottom: '15px', color: '#666' }}>Đổi mật khẩu (tùy chọn)</h4>
+
+              <div className="form-group">
+                <label className="form-label">Mật khẩu hiện tại</label>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={updateFormData.currentPassword}
+                  onChange={handleUpdateFormChange}
+                  className={`form-control ${updateErrors.currentPassword ? 'is-invalid' : ''}`}
+                  placeholder="Nhập mật khẩu hiện tại (nếu muốn đổi)"
+                />
+                {updateErrors.currentPassword && (
+                  <div className="invalid-feedback">{updateErrors.currentPassword}</div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Mật khẩu mới</label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={updateFormData.newPassword}
+                  onChange={handleUpdateFormChange}
+                  className={`form-control ${updateErrors.newPassword ? 'is-invalid' : ''}`}
+                  placeholder="Nhập mật khẩu mới (tùy chọn)"
+                />
+                {updateErrors.newPassword && (
+                  <div className="invalid-feedback">{updateErrors.newPassword}</div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Xác nhận mật khẩu mới</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={updateFormData.confirmPassword}
+                  onChange={handleUpdateFormChange}
+                  className={`form-control ${updateErrors.confirmPassword ? 'is-invalid' : ''}`}
+                  placeholder="Nhập lại mật khẩu mới"
+                />
+                {updateErrors.confirmPassword && (
+                  <div className="invalid-feedback">{updateErrors.confirmPassword}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn-secondary" 
+                onClick={closeUpdateModal}
+                disabled={updating}
+              >
+                Hủy
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={handleUpdateProfile}
+                disabled={updating}
+              >
+                {updating ? 'Đang cập nhật...' : 'Cập nhật'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
