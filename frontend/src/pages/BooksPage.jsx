@@ -39,7 +39,7 @@ export default function BooksPage() {
       delete apiFilters.isPopular;
       
       const response = await bookService.getAllBooks(apiFilters);
-      let filteredBooks = response.books;
+      let filteredBooks = response.books || response.data || [];
       
       // Lọc sách mới (tạo trong vòng 30 ngày)
       if (currentFilters.isNew) {
@@ -56,14 +56,117 @@ export default function BooksPage() {
       }
       
       setBooks(filteredBooks);
-      setTotalBooks(currentFilters.isNew || currentFilters.isPopular ? filteredBooks.length : response.total);
+      setTotalBooks(currentFilters.isNew || currentFilters.isPopular ? filteredBooks.length : response.total || filteredBooks.length);
       setError(null);
     } catch (err) {
+      console.error('Error fetching books:', err);
       setError(err.message || "Không thể tải danh sách sách");
+      // Fallback to dummy data if API fails
+      setBooks(dummyBooks);
+      setTotalBooks(dummyBooks.length);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Fetch filter options (categories, authors, publishers)
+  const fetchFilterOptions = useCallback(async () => {
+    try {
+      // Fetch categories
+      const categoriesResponse = await bookService.getAllCategories();
+      // Handle different response formats
+      const categoriesData = categoriesResponse?.data || categoriesResponse || [];
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      
+      // For now, we'll extract authors and publishers from books
+      // In a real app, you'd have separate endpoints for these
+      const booksResponse = await bookService.getAllBooks({ limit: 1000 }); // Get all books to extract unique authors/publishers
+      const booksData = booksResponse.books || booksResponse.data || booksResponse || [];
+      
+      // Extract unique authors
+      const uniqueAuthors = [];
+      const authorMap = new Map();
+      
+      if (Array.isArray(booksData)) {
+        booksData.forEach(book => {
+          if (book.authors && Array.isArray(book.authors) && book.authors.length > 0) {
+            book.authors.forEach(author => {
+              if (author && author.name && !authorMap.has(author.id || author.name)) {
+                authorMap.set(author.id || author.name, author);
+                uniqueAuthors.push(author);
+              }
+            });
+          } else if (book.author && book.author.name) {
+            if (!authorMap.has(book.author.id || book.author.name)) {
+              authorMap.set(book.author.id || book.author.name, book.author);
+              uniqueAuthors.push(book.author);
+            }
+          }
+          // Extract author from specifications if available
+          if (book.specifications && book.specifications['Tác giả']) {
+            const authorName = book.specifications['Tác giả'];
+            if (!authorMap.has(authorName)) {
+              const author = { name: authorName, id: authorName };
+              authorMap.set(authorName, author);
+              uniqueAuthors.push(author);
+            }
+          }
+        });
+      }
+      setAuthors(uniqueAuthors);
+      
+      // Extract unique publishers
+      const uniquePublishers = [];
+      const publisherMap = new Map();
+      
+      if (Array.isArray(booksData)) {
+        booksData.forEach(book => {
+          if (book.publisher && book.publisher.name && !publisherMap.has(book.publisher.id || book.publisher.name)) {
+            publisherMap.set(book.publisher.id || book.publisher.name, book.publisher);
+            uniquePublishers.push(book.publisher);
+          } else if (book.brand && !publisherMap.has(book.brand)) {
+            const publisher = { id: book.brand, name: book.brand };
+            publisherMap.set(book.brand, publisher);
+            uniquePublishers.push(publisher);
+          }
+          // Extract publisher from specifications if available
+          if (book.specifications && book.specifications['Nhà xuất bản']) {
+            const publisherName = book.specifications['Nhà xuất bản'];
+            if (!publisherMap.has(publisherName)) {
+              const publisher = { name: publisherName, id: publisherName };
+              publisherMap.set(publisherName, publisher);
+              uniquePublishers.push(publisher);
+            }
+          }
+        });
+      }
+      setPublishers(uniquePublishers);
+      
+    } catch (err) {
+      console.error('Error fetching filter options:', err);
+      // Set fallback filter options
+      setCategories([
+        { id: "1", name: "Kỹ năng sống" },
+        { id: "2", name: "Tiểu thuyết" },
+        { id: "3", name: "Tâm lý học" },
+        { id: "4", name: "Kinh tế" }
+      ]);
+      setAuthors([
+        { id: "Dale Carnegie", name: "Dale Carnegie" },
+        { id: "Daniel Kahneman", name: "Daniel Kahneman" },
+        { id: "Nguyễn Nhật Ánh", name: "Nguyễn Nhật Ánh" }
+      ]);
+      setPublishers([
+        { id: "NXB Trẻ", name: "NXB Trẻ" },
+        { id: "NXB Tổng hợp TP.HCM", name: "NXB Tổng hợp TP.HCM" }
+      ]);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Fetch filter options first
+    fetchFilterOptions();
+  }, [fetchFilterOptions]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -142,7 +245,7 @@ export default function BooksPage() {
     window.scrollTo(0, 0);
   };
 
-  const displayedBooks = loading ? [] : (books.length > 0 ? books : dummyBooks);
+  const displayedBooks = books;
 
   return (
     <div className="books-page-container">
@@ -161,10 +264,11 @@ export default function BooksPage() {
                 onChange={handleFilterChange}
               >
                 <option value="">Tất cả thể loại</option>
-                <option value="1">Tự lực</option>
-                <option value="2">Tiểu thuyết</option>
-                <option value="3">Thiếu nhi</option>
-                <option value="4">Kinh tế</option>
+                {Array.isArray(categories) && categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
             
@@ -177,10 +281,28 @@ export default function BooksPage() {
                 onChange={handleFilterChange}
               >
                 <option value="">Tất cả tác giả</option>
-                <option value="1">Dale Carnegie</option>
-                <option value="2">Paulo Coelho</option>
-                <option value="3">Nguyễn Nhật Ánh</option>
-                <option value="4">Tô Hoài</option>
+                {Array.isArray(authors) && authors.map(author => (
+                  <option key={author.id || author.name} value={author.id || author.name}>
+                    {author.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label htmlFor="publisherId">Nhà xuất bản</label>
+              <select 
+                id="publisherId" 
+                name="publisherId"
+                value={filters.publisherId}
+                onChange={handleFilterChange}
+              >
+                <option value="">Tất cả nhà xuất bản</option>
+                {Array.isArray(publishers) && publishers.map(publisher => (
+                  <option key={publisher.id || publisher.name} value={publisher.id || publisher.name}>
+                    {publisher.name}
+                  </option>
+                ))}
               </select>
             </div>
             

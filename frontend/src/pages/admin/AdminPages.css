@@ -345,6 +345,7 @@
 }
 
 .dashboard-low-stock-title {
+  display:flex;
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -352,6 +353,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  justify-content: space-between;
 }
 
 .dashboard-low-stock-meta {

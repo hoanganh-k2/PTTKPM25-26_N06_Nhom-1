@@ -27,6 +27,20 @@ export class Book {
   pageCount?: number;
   coverImage?: string;
 
+  // Chi tiết sản phẩm mở rộng (giống Shopee)
+  highlights?: string[]; // Điểm nổi bật
+  detailedDescription?: string; // Mô tả chi tiết (HTML/Markdown)
+  suitableFor?: string[]; // Phù hợp với đối tượng nào
+  specifications?: { [key: string]: string }; // Thông số kỹ thuật
+  
+  // Thông tin bổ sung
+  brand?: string; // Thương hiệu
+  coverType?: string; // Loại bìa (bìa mềm, bìa cứng)
+  dimensions?: string; // Kích thước (cm)
+  weight?: number; // Trọng lượng (gram)
+  distributor?: string; // Nhà phân phối
+  tags?: string[]; // Tags/từ khóa
+
   createdAt: Date;
   updatedAt: Date;
 
@@ -65,6 +79,46 @@ export class CreateBookDto {
   language?: string;
   pageCount?: number;
   coverImage?: string;
+
+  // Chi tiết sản phẩm mở rộng
+  @IsOptional()
+  @IsArray()
+  highlights?: string[];
+
+  @IsOptional()
+  @IsString()
+  detailedDescription?: string;
+
+  @IsOptional()
+  @IsArray()
+  suitableFor?: string[];
+
+  @IsOptional()
+  specifications?: { [key: string]: string };
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @IsOptional()
+  @IsString()
+  coverType?: string;
+
+  @IsOptional()
+  @IsString()
+  dimensions?: string;
+
+  @IsOptional()
+  @IsNumber()
+  weight?: number;
+
+  @IsOptional()
+  @IsString()
+  distributor?: string;
+
+  @IsOptional()
+  @IsArray()
+  tags?: string[];
 
   // Cho phép các populated fields từ frontend (sẽ bị ignore)
   authors?: any[];
@@ -122,6 +176,46 @@ export class UpdateBookDto {
   @IsOptional()
   @IsString()
   coverImage?: string;
+
+  // Chi tiết sản phẩm mở rộng
+  @IsOptional()
+  @IsArray()
+  highlights?: string[];
+
+  @IsOptional()
+  @IsString()
+  detailedDescription?: string;
+
+  @IsOptional()
+  @IsArray()
+  suitableFor?: string[];
+
+  @IsOptional()
+  specifications?: { [key: string]: string };
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @IsOptional()
+  @IsString()
+  coverType?: string;
+
+  @IsOptional()
+  @IsString()
+  dimensions?: string;
+
+  @IsOptional()
+  @IsNumber()
+  weight?: number;
+
+  @IsOptional()
+  @IsString()
+  distributor?: string;
+
+  @IsOptional()
+  @IsArray()
+  tags?: string[];
 
   // Cho phép các populated fields từ frontend (sẽ bị ignore)
   @IsOptional()

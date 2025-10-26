@@ -262,7 +262,12 @@ export default function AdminDashboard() {
                   <div className="dashboard-low-stock-info">
                     <h4 className="dashboard-low-stock-title">{book.title}</h4>
                     <div className="dashboard-low-stock-meta">
-                      <span className="dashboard-low-stock-author">{book.author?.name || 'Không có tác giả'}</span>
+                      <span className="dashboard-low-stock-author">
+                        {book.authors && book.authors.length > 0 
+                          ? book.authors.map(author => author.name).join(', ')
+                          : book.author?.name || book.specifications?.['Tác giả'] || 'Không có tác giả'
+                        }
+                      </span>
                       <span className="dashboard-low-stock-price">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(book.price || 0)}
                       </span>

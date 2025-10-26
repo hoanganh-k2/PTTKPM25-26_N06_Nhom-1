@@ -7,15 +7,29 @@
 .breadcrumb {
   margin-bottom: 2rem;
   font-size: 0.9rem;
+  background-color: #f8fafc;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .breadcrumb a {
-  color: #2563eb;
+  color: #3b82f6;
   text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
 }
 
 .breadcrumb a:hover {
+  color: #1d4ed8;
   text-decoration: underline;
+}
+
+.breadcrumb span {
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .book-detail-content {
@@ -23,6 +37,10 @@
   flex-direction: column;
   gap: 2rem;
   margin-bottom: 3rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 @media (min-width: 768px) {
@@ -83,20 +101,37 @@
 
 .book-meta {
   margin-bottom: 1.5rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .meta-item {
-  margin-bottom: 0.5rem;
+  display: flex;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0;
+}
+
+.meta-item:last-child {
+  border-bottom: none;
+}
+
+.meta-item:nth-child(even) {
+  background-color: #ffffff;
 }
 
 .meta-label {
   font-weight: 600;
-  margin-right: 0.5rem;
-  color: #4b5563;
+  margin-right: 1rem;
+  color: #6b7280;
+  min-width: 120px;
+  flex-shrink: 0;
 }
 
 .meta-value {
   color: #1f2937;
+  flex: 1;
 }
 
 .categories {
@@ -240,6 +275,10 @@
 .author-info-section,
 .publisher-info-section {
   margin-bottom: 3rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .author-info-section h2,
@@ -248,8 +287,32 @@
   font-weight: 600;
   margin-bottom: 1.5rem;
   color: #1f2937;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 2px solid #e5e7eb;
   padding-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.author-info-section h2::before {
+  content: "👤";
+}
+
+.publisher-info-section h2::before {
+  content: "🏢";
+}
+
+.authors-info {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.author-info,
+.publisher-info {
+  background-color: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
 }
 
 .author-info h3,
@@ -263,24 +326,39 @@
 .author-nationality {
   font-style: italic;
   margin-bottom: 0.75rem;
-  color: #4b5563;
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 
 .author-biography,
 .publisher-info p {
   line-height: 1.7;
   color: #4b5563;
+  margin: 0;
 }
 
 .publisher-website {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 1rem;
-  color: #2563eb;
+  color: #3b82f6;
   text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
 
 .publisher-website:hover {
-  text-decoration: underline;
+  background-color: #3b82f6;
+  color: white;
+  text-decoration: none;
+}
+
+.publisher-website::after {
+  content: "↗";
 }
 
 .loading-spinner,
@@ -534,4 +612,412 @@
 
 .back-link:hover {
   text-decoration: underline;
+}
+
+/* Enhanced product details styling */
+.subsection-title {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.book-description {
+  line-height: 1.6;
+  color: #4b5563;
+  margin-bottom: 1rem;
+}
+
+.book-description > *:first-child {
+  margin-top: 0;
+}
+
+.book-description > *:last-child {
+  margin-bottom: 0;
+}
+
+/* HTML content styling within description */
+.book-description h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 1.5rem 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.book-description h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.book-description p {
+  margin: 0 0 0.75rem 0;
+  line-height: 1.6;
+}
+
+.book-description p:last-child {
+  margin-bottom: 0;
+}
+
+.book-description ul {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.book-description ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.book-description li {
+  margin: 0.25rem 0;
+  line-height: 1.6;
+}
+
+.book-description blockquote {
+  background-color: #f8fafc;
+  border-left: 4px solid #3b82f6;
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #4b5563;
+  border-radius: 0 8px 8px 0;
+}
+
+.book-description blockquote p {
+  margin: 0 0 0.5rem 0;
+}
+
+.book-description blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.book-description blockquote cite {
+  display: block;
+  text-align: right;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+/* Bulleted lists styling */
+.bulleted {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.75rem 0 0 0;
+}
+
+.bulleted li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+  line-height: 1.6;
+  color: #374151;
+}
+
+/* .bulleted li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #3b82f6;
+  font-weight: bold;
+  font-size: 1.2em;
+} */
+
+/* Key-value list styling */
+.kv-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0 0;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.kv-list li {
+  display: flex;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin: 0;
+}
+
+.kv-list li:last-child {
+  border-bottom: none;
+}
+
+.kv-list li:nth-child(even) {
+  background-color: #ffffff;
+}
+
+.kv-label {
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 120px;
+  flex-shrink: 0;
+  margin-right: 1rem;
+}
+
+.kv-list li span:last-child {
+  color: #1f2937;
+  flex: 1;
+}
+
+/* Tags container styling */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0 0;
+}
+
+.tag-item {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tag-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Improved section spacing */
+.detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.book-details-tabs {
+  margin-bottom: 3rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content {
+  padding: 0;
+}
+
+.tab-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .book-detail-container {
+    padding: 0 0.5rem;
+  }
+
+  .book-detail-content,
+  .book-details-tabs,
+  .author-info-section,
+  .publisher-info-section {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    border-radius: 0;
+    padding: 1rem;
+  }
+
+  .breadcrumb {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    border-radius: 0;
+  }
+
+  .meta-item {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .meta-label {
+    min-width: auto;
+    margin-right: 0;
+    font-size: 0.875rem;
+  }
+
+  .kv-list li {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .kv-label {
+    min-width: auto;
+    margin-right: 0;
+    font-size: 0.875rem;
+  }
+  
+  .subsection-title {
+    font-size: 1rem;
+  }
+
+  .book-title {
+    font-size: 1.5rem;
+  }
+
+  .tags-container {
+    gap: 0.25rem;
+  }
+
+  .tag-item {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* Shopee-style product details styles */
+.subsection-title {
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  border-left: 4px solid #3b82f6;
+  padding-left: 0.75rem;
+}
+
+.bulleted {
+  padding-left: 1.25rem;
+  list-style: disc;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.bulleted li {
+  margin: 0.5rem 0;
+}
+
+.kv-list {
+  padding-left: 0;
+  list-style: none;
+  margin: 0.5rem 0 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.kv-list li {
+  margin: 0.75rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.kv-list li:last-child {
+  border-bottom: none;
+}
+
+.kv-label {
+  color: #64748b;
+  font-weight: 500;
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.kv-list li span:last-child {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.tag-item {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: transform 0.2s ease;
+}
+
+.tag-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced book description styling */
+.book-description h3,
+.book-description h4 {
+  color: #1e293b;
+  margin: 1.5rem 0 0.75rem;
+  font-weight: 600;
+}
+
+.book-description h3 {
+  font-size: 1.25rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.book-description h4 {
+  font-size: 1.1rem;
+}
+
+.book-description ul, .book-description ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+}
+
+.book-description ul li, .book-description ol li {
+  margin: 0.5rem 0;
+  color: #4b5563;
+}
+
+.book-description blockquote {
+  background: #f1f5f9;
+  border-left: 4px solid #3b82f6;
+  margin: 1.5rem 0;
+  padding: 1rem 1.5rem;
+  font-style: italic;
+  color: #475569;
+}
+
+.book-description blockquote cite {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.book-description strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.book-description p {
+  margin: 1rem 0;
+  line-height: 1.7;
 }

@@ -47,7 +47,7 @@
 /* Hero Section */
 .hero-section {
   display: flex;
-  padding: 80px;
+  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
   gap: 40px;
@@ -76,15 +76,17 @@
 }
 
 .hero-content p {
-  color: #4a5568;
+  color: #4a5568 !important;
   line-height: 1.7;
   font-size: 1.1rem;
   margin-bottom: 40px;
+  margin: 20px 0 60px !important;
 }
 
 .hero-buttons {
   display: flex;
-  gap: 20px;
+  justify-content: center;
+  gap: 50px;
 }
 
 .buy-now-btn {
@@ -92,11 +94,13 @@
   color: white;
   padding: 10px 30px;
   font-weight: 600;
+  text-decoration: none !important;
 }
 
 .read-sample-btn {
   border-color: #1a202c;
   color: #1a202c;
+  text-decoration: none !important;
 }
 
 .hero-image {
@@ -220,7 +224,7 @@
 }
 
 .read-more-btn {
-  align-self: flex-start;
+  /* align-self: flex-start; */
   margin-top: 20px;
   border-color: #1a202c;
   color: #1a202c;

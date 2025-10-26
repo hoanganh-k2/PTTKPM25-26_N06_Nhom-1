@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import bookService from "../services/book.service";
 import { useCart } from "../contexts/CartContext";
+import DOMPurify from "dompurify";
 import "./BookDetailPage.css";
 
 export default function BookDetailPage() {
@@ -12,6 +13,48 @@ export default function BookDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const { addToCart, isInCart, getItemQuantity } = useCart();
+
+  // Helper để render description an toàn (HTML hoặc plain text)
+  const renderDescription = (text) => {
+    if (!text) return "Chưa có mô tả.";
+    const looksLikeHTML = /<[a-z][\s\S]*>/i.test(text);
+    if (looksLikeHTML) {
+      return <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text) }} />;
+    }
+    // Xử lý plain text với line breaks tự nhiên
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    return (
+      <div>
+        {lines.map((line, i) => (
+          <p key={i}>{line.trim()}</p>
+        ))}
+      </div>
+    );
+  };
+
+  // Chuẩn hóa "Chi tiết sản phẩm" từ dữ liệu hiện có + thuộc tính mở rộng
+  const getDetailItems = () => {
+    if (!book) return [];
+    
+    const basicDetails = [
+      { label: "Thương hiệu", value: book.brand },
+      { label: "Loại bìa", value: book.coverType },
+      { label: "Kích thước", value: book.dimensions },
+      { label: "Tổng số trang", value: book.totalPages || book.pageCount },
+      { label: "Ngôn ngữ", value: book.language },
+      { label: "Nhà phát hành", value: book.distributor || book.publisher?.name },
+      { label: "Năm xuất bản", value: book.publishYear },
+      { label: "ISBN", value: book.ISBN },
+      { label: "Trọng lượng", value: book.weight ? `${book.weight}g` : null },
+    ];
+
+    // Thêm specifications nếu có
+    const specDetails = book.specifications && typeof book.specifications === "object"
+      ? Object.entries(book.specifications).map(([k, v]) => ({ label: k, value: v }))
+      : [];
+
+    return [...basicDetails, ...specDetails].filter((item) => item?.value);
+  };
 
   useEffect(() => {
     const fetchBookDetails = async () => {
@@ -221,14 +264,74 @@ export default function BookDetailPage() {
         </div>
       </div>
 
+      {/* Chi tiết sản phẩm */}
+          {getDetailItems().length > 0 && (
+            <div className="detail-section">
+              <h3 className="subsection-title">📋 Thông số kỹ thuật</h3>
+              <ul className="kv-list">
+                {getDetailItems().map((detail, i) => (
+                  <li key={`${detail.label}-${i}`}>
+                    <span className="kv-label">{detail.label}</span>
+                    <span>{detail.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
       <div className="book-details-tabs">
         <div className="tab-content">
-          <h2>Mô tả sách</h2>
-          <div className="book-description">{book.description}</div>
+          <h2>📖 Thông tin chi tiết</h2>
+          
+          {/* Mô tả chính */}
+          <div className="book-description">
+            {book.detailedDescription 
+              ? renderDescription(book.detailedDescription)
+              : renderDescription(book.description)
+            }
+          </div>
+
+          {/* Điểm nổi bật */}
+          {Array.isArray(book.highlights) && book.highlights.length > 0 && (
+            <div className="detail-section">
+              <h3 className="subsection-title">⭐ Điểm nổi bật</h3>
+              <ul className="bulleted">
+                {book.highlights.map((highlight, i) => (
+                  <li key={i}>{highlight}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          
+
+          {/* Phù hợp với */}
+          {Array.isArray(book.suitableFor) && book.suitableFor.length > 0 && (
+            <div className="detail-section">
+              <h3 className="subsection-title">🎯 Phù hợp với</h3>
+              <ul className="bulleted">
+                {book.suitableFor.map((target, i) => (
+                  <li key={i}>{target}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Tags */}
+          {Array.isArray(book.tags) && book.tags.length > 0 && (
+            <div className="detail-section">
+              <h3 className="subsection-title">🏷️ Từ khóa</h3>
+              <div className="tags-container">
+                {book.tags.map((tag, i) => (
+                  <span key={i} className="tag-item">#{tag}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="author-info-section">
+      {/* <div className="author-info-section">
         <h2>Về tác giả</h2>
         {book.authors && book.authors.length > 0 ? (
           <div className="authors-info">
@@ -249,9 +352,9 @@ export default function BookDetailPage() {
         ) : (
           <p>Không có thông tin về tác giả.</p>
         )}
-      </div>
+      </div> */}
 
-      <div className="publisher-info-section">
+      {/* <div className="publisher-info-section">
         <h2>Về nhà xuất bản</h2>
         {book.publisher ? (
           <div className="publisher-info">
@@ -271,7 +374,7 @@ export default function BookDetailPage() {
         ) : (
           <p>Không có thông tin về nhà xuất bản.</p>
         )}
-      </div>
+      </div> */}
     </div>
   );
 }
